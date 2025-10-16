@@ -20,7 +20,7 @@ interface UIStore {
   resetFilters: () => void;
 }
 
-export const useUIStore = create<UIStore>((set) => ({
+export const useUiStore = create<UIStore>((set) => ({
   // State
   currentView: 'today',
   selectedDate: new Date(),
