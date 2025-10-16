@@ -1,7 +1,7 @@
 // TaskList component - Scrollable list of tasks with empty state
 
 import React from 'react';
-import { FlatList, View, Text, StyleSheet } from 'react-native';
+import { FlatList, View, Text, StyleSheet, RefreshControl } from 'react-native';
 import { Task } from '../../types/task';
 import { TaskItem } from './TaskItem';
 import { colors, spacing, typography } from '../../config/theme';
@@ -13,6 +13,7 @@ interface TaskListProps {
   showCategory?: boolean;
   getCategoryName?: (categoryId: number | null) => string | undefined;
   emptyMessage?: string;
+  refreshControl?: React.ReactElement<typeof RefreshControl>;
 }
 
 export const TaskList: React.FC<TaskListProps> = ({
@@ -22,6 +23,7 @@ export const TaskList: React.FC<TaskListProps> = ({
   showCategory = false,
   getCategoryName,
   emptyMessage = 'No tasks yet',
+  refreshControl,
 }) => {
   const renderItem = ({ item }: { item: Task }) => (
     <TaskItem
@@ -46,6 +48,7 @@ export const TaskList: React.FC<TaskListProps> = ({
       keyExtractor={(item) => item.id.toString()}
       ListEmptyComponent={renderEmpty}
       contentContainerStyle={tasks.length === 0 ? styles.emptyList : undefined}
+      refreshControl={refreshControl}
     />
   );
 };

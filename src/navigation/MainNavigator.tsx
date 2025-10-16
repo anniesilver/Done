@@ -1,6 +1,7 @@
 // MainNavigator - Bottom tab navigation for main app screens
 
 import React from 'react';
+import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { TodayScreen } from '../screens/main/TodayScreen';
 import { TasksScreen } from '../screens/main/TasksScreen';
@@ -36,7 +37,7 @@ export const MainNavigator: React.FC = () => {
         component={TodayScreen}
         options={{
           tabBarLabel: 'Today',
-          tabBarIcon: ({ color }) => <span style={{ fontSize: 24 }}>📅</span>,
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 24 }}>📅</Text>,
           headerShown: false, // TodayScreen has its own custom header
         }}
       />
@@ -46,7 +47,7 @@ export const MainNavigator: React.FC = () => {
         component={TasksScreen}
         options={{
           tabBarLabel: 'Tasks',
-          tabBarIcon: ({ color }) => <span style={{ fontSize: 24 }}>✓</span>,
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 24 }}>✓</Text>,
           headerTitle: 'All Tasks',
         }}
       />
@@ -56,7 +57,7 @@ export const MainNavigator: React.FC = () => {
         component={CalendarScreen}
         options={{
           tabBarLabel: 'Calendar',
-          tabBarIcon: ({ color }) => <span style={{ fontSize: 24 }}>📆</span>,
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 24 }}>📆</Text>,
           headerShown: false, // CalendarScreen has its own header
         }}
       />
