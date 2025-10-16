@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { AuthNavigator } from './AuthNavigator';
-import { HomeScreen } from '../screens/main/HomeScreen';
+import { MainNavigator } from './MainNavigator';
 import { useAuthStore } from '../stores/authStore';
 
 export const AppNavigator: React.FC = () => {
@@ -14,7 +14,7 @@ export const AppNavigator: React.FC = () => {
 
   return (
     <NavigationContainer>
-      {user ? <HomeScreen /> : <AuthNavigator />}
+      {user ? <MainNavigator /> : <AuthNavigator />}
     </NavigationContainer>
   );
 };
