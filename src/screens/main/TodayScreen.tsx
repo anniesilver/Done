@@ -3,14 +3,18 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, RefreshControl } from 'react-native';
 import { TaskList } from '../../components/tasks/TaskList';
+import { TaskDetailModal } from '../modals/TaskDetailModal';
 import { useTaskStore } from '../../stores/taskStore';
 import { useCategoryStore } from '../../stores/categoryStore';
 import { colors, spacing, typography } from '../../config/theme';
 import { format } from 'date-fns';
+import { Task } from '../../types/task';
 
 export const TodayScreen: React.FC = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [refreshing, setRefreshing] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   const tasks = useTaskStore((state) => state.tasks);
   const isLoading = useTaskStore((state) => state.isLoading);
@@ -45,6 +49,21 @@ export const TodayScreen: React.FC = () => {
   const getCategoryName = (categoryId: number | null): string | undefined => {
     if (!categoryId) return undefined;
     return categories.find((c) => c.id === categoryId)?.name;
+  };
+
+  const handleCreateTask = () => {
+    setSelectedTask(null);
+    setModalVisible(true);
+  };
+
+  const handleTaskPress = (task: Task) => {
+    setSelectedTask(task);
+    setModalVisible(true);
+  };
+
+  const handleCloseModal = () => {
+    setModalVisible(false);
+    setSelectedTask(null);
   };
 
   const todayTasks = getTodayTasks();
@@ -82,6 +101,7 @@ export const TodayScreen: React.FC = () => {
       <TaskList
         tasks={todayTasks}
         onToggleComplete={toggleComplete}
+        onTaskPress={handleTaskPress}
         showCategory={true}
         getCategoryName={getCategoryName}
         emptyMessage="No tasks for today. Add one to get started!"
@@ -91,9 +111,16 @@ export const TodayScreen: React.FC = () => {
       />
 
       {/* Add task button */}
-      <TouchableOpacity style={styles.fab}>
+      <TouchableOpacity style={styles.fab} onPress={handleCreateTask}>
         <Text style={styles.fabText}>+</Text>
       </TouchableOpacity>
+
+      {/* Task detail/create modal */}
+      <TaskDetailModal
+        visible={modalVisible}
+        task={selectedTask}
+        onClose={handleCloseModal}
+      />
     </View>
   );
 };

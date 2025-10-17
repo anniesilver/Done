@@ -1,16 +1,20 @@
 // TasksScreen - All tasks view with category filtering
 
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, RefreshControl } from 'react-native';
+import { View, StyleSheet, RefreshControl, TouchableOpacity, Text } from 'react-native';
 import { TaskList } from '../../components/tasks/TaskList';
 import { CategoryList } from '../../components/categories/CategoryList';
+import { TaskDetailModal } from '../modals/TaskDetailModal';
 import { useTaskStore } from '../../stores/taskStore';
 import { useCategoryStore } from '../../stores/categoryStore';
 import { useUiStore } from '../../stores/uiStore';
-import { colors } from '../../config/theme';
+import { colors, spacing } from '../../config/theme';
+import { Task } from '../../types/task';
 
 export const TasksScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   const tasks = useTaskStore((state) => state.tasks);
   const fetchTasks = useTaskStore((state) => state.fetchTasks);
@@ -40,6 +44,21 @@ export const TasksScreen: React.FC = () => {
     return categories.find((c) => c.id === categoryId)?.name;
   };
 
+  const handleCreateTask = () => {
+    setSelectedTask(null);
+    setModalVisible(true);
+  };
+
+  const handleTaskPress = (task: Task) => {
+    setSelectedTask(task);
+    setModalVisible(true);
+  };
+
+  const handleCloseModal = () => {
+    setModalVisible(false);
+    setSelectedTask(null);
+  };
+
   // Get filtered tasks based on selected category
   const filteredTasks = selectedCategory === null
     ? tasks
@@ -67,6 +86,7 @@ export const TasksScreen: React.FC = () => {
       <TaskList
         tasks={sortedTasks}
         onToggleComplete={toggleComplete}
+        onTaskPress={handleTaskPress}
         showCategory={selectedCategory === null}
         getCategoryName={getCategoryName}
         emptyMessage={
@@ -78,6 +98,18 @@ export const TasksScreen: React.FC = () => {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
       />
+
+      {/* Add task button */}
+      <TouchableOpacity style={styles.fab} onPress={handleCreateTask}>
+        <Text style={styles.fabText}>+</Text>
+      </TouchableOpacity>
+
+      {/* Task detail/create modal */}
+      <TaskDetailModal
+        visible={modalVisible}
+        task={selectedTask}
+        onClose={handleCloseModal}
+      />
     </View>
   );
 };
@@ -86,5 +118,26 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface.white,
+  },
+  fab: {
+    position: 'absolute',
+    bottom: spacing.xl,
+    right: spacing.xl,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.primary.main,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  fabText: {
+    fontSize: 32,
+    color: colors.surface.white,
+    fontWeight: '300',
   },
 });

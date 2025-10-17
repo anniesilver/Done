@@ -1,8 +1,8 @@
-// TaskDetailModal - Modal for viewing and editing task details
+// TaskDetailModal - Modal for creating new tasks or viewing/editing existing tasks
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal, View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
-import { Task, UpdateTaskInput } from '../../types/task';
+import { Task, UpdateTaskInput, CreateTaskInput } from '../../types/task';
 import { TaskForm } from '../../components/tasks/TaskForm';
 import { useTaskStore } from '../../stores/taskStore';
 import { colors, spacing, typography } from '../../config/theme';
@@ -10,7 +10,7 @@ import { format } from 'date-fns';
 
 interface TaskDetailModalProps {
   visible: boolean;
-  task: Task | null;
+  task: Task | null; // null means create mode
   onClose: () => void;
 }
 
@@ -21,13 +21,29 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
 }) => {
   const [isEditing, setIsEditing] = useState(false);
 
+  const createTask = useTaskStore((state) => state.createTask);
   const updateTask = useTaskStore((state) => state.updateTask);
   const deleteTask = useTaskStore((state) => state.deleteTask);
   const isLoading = useTaskStore((state) => state.isLoading);
 
-  if (!task) return null;
+  const isCreateMode = task === null;
+
+  // Auto-set editing mode for create
+  useEffect(() => {
+    if (isCreateMode) {
+      setIsEditing(true);
+    } else {
+      setIsEditing(false);
+    }
+  }, [isCreateMode, task]);
+
+  const handleCreate = async (input: CreateTaskInput) => {
+    await createTask(input);
+    onClose();
+  };
 
   const handleUpdate = async (updates: UpdateTaskInput) => {
+    if (!task) return;
     await updateTask(task.id, updates);
     setIsEditing(false);
     onClose();
@@ -62,14 +78,20 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} style={styles.headerButton}>
-            <Text style={styles.headerButtonText}>Close</Text>
+            <Text style={styles.headerButtonText}>
+              {isCreateMode || isEditing ? 'Cancel' : 'Close'}
+            </Text>
           </TouchableOpacity>
 
           <Text style={styles.headerTitle}>
-            {isEditing ? 'Edit Task' : 'Task Details'}
+            {isCreateMode
+              ? 'Create Task'
+              : isEditing
+              ? 'Edit Task'
+              : 'Task Details'}
           </Text>
 
-          {!isEditing && (
+          {!isCreateMode && !isEditing && (
             <TouchableOpacity
               onPress={() => setIsEditing(true)}
               style={styles.headerButton}
@@ -78,26 +100,30 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
             </TouchableOpacity>
           )}
 
-          {isEditing && <View style={styles.headerButton} />}
+          {(isCreateMode || isEditing) && <View style={styles.headerButton} />}
         </View>
 
         {/* Content */}
-        {isEditing ? (
+        {isCreateMode || isEditing ? (
           <TaskForm
-            initialValues={{
-              text: task.text,
-              dueDate: task.dueDate,
-              reminderTime: task.reminderTime,
-              recurrence: task.recurrence,
-              categoryId: task.categoryId,
-              duration: task.duration,
-            }}
-            onSubmit={handleUpdate}
-            onCancel={() => setIsEditing(false)}
+            initialValues={
+              task
+                ? {
+                    text: task.text,
+                    dueDate: task.dueDate,
+                    reminderTime: task.reminderTime,
+                    recurrence: task.recurrence,
+                    categoryId: task.categoryId,
+                    duration: task.duration,
+                  }
+                : undefined
+            }
+            onSubmit={isCreateMode ? handleCreate : handleUpdate}
+            onCancel={isCreateMode ? onClose : () => setIsEditing(false)}
             isLoading={isLoading}
-            submitLabel="Save Changes"
+            submitLabel={isCreateMode ? 'Create Task' : 'Save Changes'}
           />
-        ) : (
+        ) : task ? (
           <ScrollView style={styles.content}>
             {/* Task text */}
             <View style={styles.section}>
@@ -163,7 +189,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
               <Text style={styles.deleteButtonText}>Delete Task</Text>
             </TouchableOpacity>
           </ScrollView>
-        )}
+        ) : null}
       </View>
     </Modal>
   );
