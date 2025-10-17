@@ -21,7 +21,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
 }) => {
   const [isEditing, setIsEditing] = useState(false);
 
-  const createTask = useTaskStore((state) => state.createTask);
+  const addTask = useTaskStore((state) => state.addTask);
   const updateTask = useTaskStore((state) => state.updateTask);
   const deleteTask = useTaskStore((state) => state.deleteTask);
   const isLoading = useTaskStore((state) => state.isLoading);
@@ -38,7 +38,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   }, [isCreateMode, task]);
 
   const handleCreate = async (input: CreateTaskInput) => {
-    await createTask(input);
+    await addTask(input);
     onClose();
   };
 
