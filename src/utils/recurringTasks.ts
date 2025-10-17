@@ -1,7 +1,7 @@
 // Recurring tasks utility functions
 
 import { Task, RecurrenceType } from '../types/task';
-import { addDays, addWeeks, addMonths } from 'date-fns';
+import { addDays, addWeeks, addMonths, addYears } from 'date-fns';
 
 /**
  * Calculate the next due date based on recurrence pattern
@@ -23,6 +23,8 @@ export const calculateNextDueDate = (
       return addWeeks(current, 1);
     case 'monthly':
       return addMonths(current, 1);
+    case 'yearly':
+      return addYears(current, 1);
     default:
       return null;
   }

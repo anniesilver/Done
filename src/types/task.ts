@@ -1,6 +1,6 @@
 // Task type definitions
 
-export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'monthly';
+export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly';
 
 export interface Task {
   id: number | string;
