@@ -137,40 +137,52 @@ export const TaskTimeSelector: React.FC<TaskTimeSelectorProps> = ({
         )}
       </View>
 
-      {/* Date Picker */}
-      {showDatePicker && (
+      {/* iOS: Combined date+time picker */}
+      {Platform.OS === 'ios' && showDatePicker && (
+        <>
+          <DateTimePicker
+            value={tempDate}
+            mode="datetime"
+            display="inline"
+            onChange={(event, selectedDate) => {
+              if (selectedDate) {
+                setTempDate(selectedDate);
+              }
+            }}
+            minimumDate={minDate}
+          />
+          <View style={styles.iosButtons}>
+            <TouchableOpacity
+              style={styles.doneButton}
+              onPress={() => {
+                setShowDatePicker(false);
+                onChange(tempDate);
+              }}
+            >
+              <Text style={styles.doneButtonText}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      )}
+
+      {/* Android: Separate date and time pickers */}
+      {Platform.OS === 'android' && showDatePicker && (
         <DateTimePicker
           value={tempDate}
           mode="date"
-          display={Platform.OS === 'ios' ? 'inline' : 'default'}
+          display="default"
           onChange={handleDateChange}
           minimumDate={minDate}
         />
       )}
 
-      {/* Time Picker */}
-      {showTimePicker && (
+      {Platform.OS === 'android' && showTimePicker && (
         <DateTimePicker
           value={tempDate}
           mode="time"
-          display={Platform.OS === 'ios' ? 'inline' : 'default'}
+          display="default"
           onChange={handleTimeChange}
         />
-      )}
-
-      {/* iOS combined picker */}
-      {Platform.OS === 'ios' && showDatePicker && (
-        <View style={styles.iosButtons}>
-          <TouchableOpacity
-            style={styles.doneButton}
-            onPress={() => {
-              setShowDatePicker(false);
-              onChange(tempDate);
-            }}
-          >
-            <Text style={styles.doneButtonText}>Done</Text>
-          </TouchableOpacity>
-        </View>
       )}
     </View>
   );
