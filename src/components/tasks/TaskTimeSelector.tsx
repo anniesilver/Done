@@ -1,10 +1,10 @@
 // TaskTimeSelector component - Date and time picker for task due date
 
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Platform, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Platform, StyleSheet, TextInput } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { colors, spacing, typography } from '../../config/theme';
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
 
 interface TaskTimeSelectorProps {
   value: Date | null;
@@ -60,6 +60,62 @@ export const TaskTimeSelector: React.FC<TaskTimeSelectorProps> = ({
     setShowDatePicker(true);
   };
 
+  const handleWebDateChange = (dateString: string) => {
+    try {
+      const parsed = parse(dateString, 'yyyy-MM-dd', new Date());
+      if (value) {
+        parsed.setHours(value.getHours());
+        parsed.setMinutes(value.getMinutes());
+      }
+      onChange(parsed);
+    } catch (e) {
+      // Invalid date, ignore
+    }
+  };
+
+  const handleWebTimeChange = (timeString: string) => {
+    try {
+      const [hours, minutes] = timeString.split(':').map(Number);
+      const newDate = value ? new Date(value) : new Date();
+      newDate.setHours(hours);
+      newDate.setMinutes(minutes);
+      onChange(newDate);
+    } catch (e) {
+      // Invalid time, ignore
+    }
+  };
+
+  // Web version with HTML inputs
+  if (Platform.OS === 'web') {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.label}>{label}</Text>
+        <View style={styles.buttonRow}>
+          <TextInput
+            style={[styles.selectButton, styles.webInput]}
+            value={value ? format(value, 'yyyy-MM-dd') : ''}
+            onChange={(e: any) => handleWebDateChange(e.target.value)}
+            placeholder="Select date"
+            type="date"
+          />
+          <TextInput
+            style={[styles.selectButton, styles.webInput]}
+            value={value ? format(value, 'HH:mm') : ''}
+            onChange={(e: any) => handleWebTimeChange(e.target.value)}
+            placeholder="Select time"
+            type="time"
+          />
+          {value && (
+            <TouchableOpacity style={styles.clearButton} onPress={handleClear}>
+              <Text style={styles.clearButtonText}>Clear</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+    );
+  }
+
+  // Native version with DateTimePicker
   return (
     <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>
@@ -145,6 +201,9 @@ const styles = StyleSheet.create({
   selectButtonText: {
     fontSize: typography.body.fontSize,
     color: colors.text.primary,
+  },
+  webInput: {
+    outlineStyle: 'none',
   },
   clearButton: {
     borderWidth: 1,
