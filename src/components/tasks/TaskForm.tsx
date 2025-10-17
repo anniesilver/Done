@@ -4,6 +4,12 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, ScrollView } from 'react-native';
 import { CreateTaskInput, UpdateTaskInput, RecurrenceType } from '../../types/task';
 import { Button } from '../common/Button';
+import { TaskTimeSelector } from './TaskTimeSelector';
+import { TaskReminderSelector } from './TaskReminderSelector';
+import { TaskDurationSelector } from './TaskDurationSelector';
+import { TaskRecurrenceSelector } from './TaskRecurrenceSelector';
+import { CategoryPicker } from '../categories/CategoryPicker';
+import { useCategoryStore } from '../../stores/categoryStore';
 import { colors, spacing, typography } from '../../config/theme';
 
 interface TaskFormProps {
@@ -21,6 +27,8 @@ export const TaskForm: React.FC<TaskFormProps> = ({
   isLoading = false,
   submitLabel = 'Create Task',
 }) => {
+  const categories = useCategoryStore((state) => state.categories);
+
   const [text, setText] = useState(initialValues?.text || '');
   const [dueDate, setDueDate] = useState<Date | null>(initialValues?.dueDate || null);
   const [reminderTime, setReminderTime] = useState<Date | null>(
@@ -69,48 +77,40 @@ export const TaskForm: React.FC<TaskFormProps> = ({
           />
         </View>
 
-        {/* Due Date - Placeholder for TaskTimeSelector */}
-        <View style={styles.field}>
-          <Text style={styles.label}>Due Date</Text>
-          <Text style={styles.placeholder}>
-            {dueDate ? dueDate.toLocaleDateString() : 'No date set'}
-          </Text>
-          <Text style={styles.todo}>TODO: Add TaskTimeSelector</Text>
-        </View>
+        {/* Due Date */}
+        <TaskTimeSelector
+          value={dueDate}
+          onChange={setDueDate}
+          label="Due Date"
+        />
 
-        {/* Reminder - Placeholder for TaskReminderSelector */}
-        <View style={styles.field}>
-          <Text style={styles.label}>Reminder</Text>
-          <Text style={styles.placeholder}>
-            {reminderTime ? reminderTime.toLocaleString() : 'No reminder'}
-          </Text>
-          <Text style={styles.todo}>TODO: Add TaskReminderSelector</Text>
-        </View>
+        {/* Reminder */}
+        <TaskReminderSelector
+          dueDate={dueDate}
+          value={reminderTime}
+          onChange={setReminderTime}
+        />
 
-        {/* Duration - Placeholder for TaskDurationSelector */}
-        <View style={styles.field}>
-          <Text style={styles.label}>Duration</Text>
-          <Text style={styles.placeholder}>
-            {duration > 0 ? `${duration} minutes` : 'No duration set'}
-          </Text>
-          <Text style={styles.todo}>TODO: Add TaskDurationSelector</Text>
-        </View>
+        {/* Duration */}
+        <TaskDurationSelector
+          value={duration}
+          onChange={setDuration}
+        />
 
-        {/* Recurrence - Placeholder for TaskRecurrenceSelector */}
-        <View style={styles.field}>
-          <Text style={styles.label}>Recurrence</Text>
-          <Text style={styles.placeholder}>{recurrence}</Text>
-          <Text style={styles.todo}>TODO: Add TaskRecurrenceSelector</Text>
-        </View>
+        {/* Recurrence */}
+        <TaskRecurrenceSelector
+          value={recurrence}
+          onChange={setRecurrence}
+        />
 
-        {/* Category - Placeholder for CategoryPicker */}
-        <View style={styles.field}>
-          <Text style={styles.label}>Category</Text>
-          <Text style={styles.placeholder}>
-            {categoryId ? `Category ${categoryId}` : 'No category'}
-          </Text>
-          <Text style={styles.todo}>TODO: Add CategoryPicker</Text>
-        </View>
+        {/* Category */}
+        <CategoryPicker
+          categories={categories}
+          selectedCategoryId={categoryId}
+          onSelectCategory={setCategoryId}
+          label="Category"
+          allowNone={true}
+        />
 
         {/* Action buttons */}
         <View style={styles.actions}>
@@ -166,20 +166,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface.white,
     minHeight: 60,
     textAlignVertical: 'top',
-  },
-  placeholder: {
-    fontSize: typography.body.fontSize,
-    color: colors.text.disabled,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.surface.medium,
-    borderRadius: 8,
-  },
-  todo: {
-    fontSize: typography.caption.fontSize,
-    color: colors.semantic.warning,
-    marginTop: spacing.xs,
-    fontStyle: 'italic',
   },
   actions: {
     flexDirection: 'row',
