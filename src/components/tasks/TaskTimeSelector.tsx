@@ -158,17 +158,18 @@ export const TaskTimeSelector: React.FC<TaskTimeSelectorProps> = ({
 
         {/* Date Picker */}
         {showDatePicker && (
-          <>
+          <View style={styles.pickerContainer}>
             <DateTimePicker
               value={tempDate}
               mode="date"
-              display="spinner"
+              display="inline"
               onChange={(event, selectedDate) => {
                 if (selectedDate) {
                   setTempDate(selectedDate);
                 }
               }}
               minimumDate={minDate}
+              style={styles.datePicker}
             />
             <View style={styles.iosButtons}>
               <TouchableOpacity
@@ -181,16 +182,16 @@ export const TaskTimeSelector: React.FC<TaskTimeSelectorProps> = ({
                 <Text style={styles.doneButtonText}>Done</Text>
               </TouchableOpacity>
             </View>
-          </>
+          </View>
         )}
 
         {/* Time Picker */}
         {showTimePicker && (
-          <>
+          <View style={styles.pickerContainer}>
             <DateTimePicker
               value={tempDate}
               mode="time"
-              display="spinner"
+              display="inline"
               onChange={(event, selectedTime) => {
                 if (selectedTime) {
                   const combined = new Date(tempDate);
@@ -199,6 +200,7 @@ export const TaskTimeSelector: React.FC<TaskTimeSelectorProps> = ({
                   setTempDate(combined);
                 }
               }}
+              style={styles.datePicker}
             />
             <View style={styles.iosButtons}>
               <TouchableOpacity
@@ -211,7 +213,7 @@ export const TaskTimeSelector: React.FC<TaskTimeSelectorProps> = ({
                 <Text style={styles.doneButtonText}>Done</Text>
               </TouchableOpacity>
             </View>
-          </>
+          </View>
         )}
       </View>
     );
@@ -317,6 +319,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: spacing.sm,
+  },
+  pickerContainer: {
+    marginTop: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.surface.medium,
+    borderRadius: 8,
+    padding: spacing.sm,
+    backgroundColor: colors.surface.light,
+  },
+  datePicker: {
+    height: 200,
+    width: '100%',
   },
   iosButtons: {
     marginTop: spacing.md,
