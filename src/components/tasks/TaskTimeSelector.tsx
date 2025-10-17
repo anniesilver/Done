@@ -22,6 +22,7 @@ export const TaskTimeSelector: React.FC<TaskTimeSelectorProps> = ({
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [tempDate, setTempDate] = useState<Date>(value || new Date());
+  const [mode, setMode] = useState<'date' | 'time'>('date');
 
   const handleDateChange = (event: any, selectedDate?: Date) => {
     if (Platform.OS === 'android') {
@@ -115,7 +116,108 @@ export const TaskTimeSelector: React.FC<TaskTimeSelectorProps> = ({
     );
   }
 
-  // Native version with DateTimePicker
+  // iOS version with separate date and time buttons
+  if (Platform.OS === 'ios') {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.label}>{label}</Text>
+
+        <View style={styles.buttonRow}>
+          <TouchableOpacity
+            style={[styles.selectButton, { flex: 1 }]}
+            onPress={() => {
+              setMode('date');
+              setShowDatePicker(true);
+            }}
+          >
+            <Text style={styles.selectButtonLabel}>Date</Text>
+            <Text style={styles.selectButtonText}>
+              {value ? format(value, 'MMM d, yyyy') : 'Select'}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.selectButton, { flex: 1 }]}
+            onPress={() => {
+              setMode('time');
+              setShowTimePicker(true);
+            }}
+          >
+            <Text style={styles.selectButtonLabel}>Time</Text>
+            <Text style={styles.selectButtonText}>
+              {value ? format(value, 'h:mm a') : 'Select'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {value && (
+          <TouchableOpacity style={styles.clearButtonFullWidth} onPress={handleClear}>
+            <Text style={styles.clearButtonText}>Clear</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Date Picker */}
+        {showDatePicker && (
+          <>
+            <DateTimePicker
+              value={tempDate}
+              mode="date"
+              display="spinner"
+              onChange={(event, selectedDate) => {
+                if (selectedDate) {
+                  setTempDate(selectedDate);
+                }
+              }}
+              minimumDate={minDate}
+            />
+            <View style={styles.iosButtons}>
+              <TouchableOpacity
+                style={styles.doneButton}
+                onPress={() => {
+                  setShowDatePicker(false);
+                  onChange(tempDate);
+                }}
+              >
+                <Text style={styles.doneButtonText}>Done</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
+
+        {/* Time Picker */}
+        {showTimePicker && (
+          <>
+            <DateTimePicker
+              value={tempDate}
+              mode="time"
+              display="spinner"
+              onChange={(event, selectedTime) => {
+                if (selectedTime) {
+                  const combined = new Date(tempDate);
+                  combined.setHours(selectedTime.getHours());
+                  combined.setMinutes(selectedTime.getMinutes());
+                  setTempDate(combined);
+                }
+              }}
+            />
+            <View style={styles.iosButtons}>
+              <TouchableOpacity
+                style={styles.doneButton}
+                onPress={() => {
+                  setShowTimePicker(false);
+                  onChange(tempDate);
+                }}
+              >
+                <Text style={styles.doneButtonText}>Done</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
+      </View>
+    );
+  }
+
+  // Android version with sequential pickers
   return (
     <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>
@@ -137,36 +239,8 @@ export const TaskTimeSelector: React.FC<TaskTimeSelectorProps> = ({
         )}
       </View>
 
-      {/* iOS: Combined date+time picker */}
-      {Platform.OS === 'ios' && showDatePicker && (
-        <>
-          <DateTimePicker
-            value={tempDate}
-            mode="datetime"
-            display="inline"
-            onChange={(event, selectedDate) => {
-              if (selectedDate) {
-                setTempDate(selectedDate);
-              }
-            }}
-            minimumDate={minDate}
-          />
-          <View style={styles.iosButtons}>
-            <TouchableOpacity
-              style={styles.doneButton}
-              onPress={() => {
-                setShowDatePicker(false);
-                onChange(tempDate);
-              }}
-            >
-              <Text style={styles.doneButtonText}>Done</Text>
-            </TouchableOpacity>
-          </View>
-        </>
-      )}
-
       {/* Android: Separate date and time pickers */}
-      {Platform.OS === 'android' && showDatePicker && (
+      {showDatePicker && (
         <DateTimePicker
           value={tempDate}
           mode="date"
@@ -176,7 +250,7 @@ export const TaskTimeSelector: React.FC<TaskTimeSelectorProps> = ({
         />
       )}
 
-      {Platform.OS === 'android' && showTimePicker && (
+      {showTimePicker && (
         <DateTimePicker
           value={tempDate}
           mode="time"
@@ -210,6 +284,11 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     backgroundColor: colors.surface.white,
   },
+  selectButtonLabel: {
+    fontSize: typography.caption.fontSize,
+    color: colors.text.secondary,
+    marginBottom: spacing.xs,
+  },
   selectButtonText: {
     fontSize: typography.body.fontSize,
     color: colors.text.primary,
@@ -229,6 +308,15 @@ const styles = StyleSheet.create({
     fontSize: typography.body.fontSize,
     color: colors.semantic.danger,
     fontWeight: '600',
+  },
+  clearButtonFullWidth: {
+    borderWidth: 1,
+    borderColor: colors.semantic.danger,
+    borderRadius: 8,
+    padding: spacing.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: spacing.sm,
   },
   iosButtons: {
     marginTop: spacing.md,
