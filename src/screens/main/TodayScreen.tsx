@@ -1,7 +1,7 @@
 // TodayScreen - Main screen showing today's tasks with live clock
 
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, RefreshControl, Image } from 'react-native';
 import { TaskList } from '../../components/tasks/TaskList';
 import { TaskDetailModal } from '../modals/TaskDetailModal';
 import { useTaskStore } from '../../stores/taskStore';
@@ -72,8 +72,18 @@ export const TodayScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header with live clock */}
+      {/* Header with logo and live clock */}
       <View style={styles.header}>
+        {/* Logo */}
+        <View style={styles.logoContainer}>
+          <Image
+            source={require('../../../assets/images/icon.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+          <Text style={styles.appName}>Done</Text>
+        </View>
+
         <View style={styles.dateSection}>
           <Text style={styles.date}>{format(currentTime, 'EEEE, MMMM d')}</Text>
           <Text style={styles.time}>{format(currentTime, 'h:mm:ss a')}</Text>
@@ -134,6 +144,22 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary.main,
     padding: spacing.lg,
     paddingTop: spacing.xl,
+  },
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  logo: {
+    width: 48,
+    height: 48,
+    marginRight: spacing.md,
+  },
+  appName: {
+    fontSize: typography.h1.fontSize,
+    fontWeight: 'bold',
+    color: colors.surface.white,
+    letterSpacing: 1,
   },
   dateSection: {
     marginBottom: spacing.md,
