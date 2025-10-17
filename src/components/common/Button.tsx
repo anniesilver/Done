@@ -9,21 +9,27 @@ import {
 import { colors, spacing, borderRadius, typography } from '../../config/theme';
 
 interface ButtonProps extends TouchableOpacityProps {
-  title: string;
+  title?: string;
+  children?: React.ReactNode;
   variant?: 'primary' | 'secondary' | 'danger';
+  loading?: boolean;
   isLoading?: boolean;
   fullWidth?: boolean;
 }
 
 export const Button: React.FC<ButtonProps> = ({
   title,
+  children,
   variant = 'primary',
+  loading = false,
   isLoading = false,
   fullWidth = false,
   disabled,
   style,
   ...props
 }) => {
+  const isLoadingState = loading || isLoading;
+  const displayText = title || children;
   const getButtonStyle = () => {
     switch (variant) {
       case 'secondary':
@@ -52,18 +58,18 @@ export const Button: React.FC<ButtonProps> = ({
         styles.button,
         getButtonStyle(),
         fullWidth && styles.fullWidth,
-        (disabled || isLoading) && styles.disabled,
+        (disabled || isLoadingState) && styles.disabled,
         style,
       ]}
-      disabled={disabled || isLoading}
+      disabled={disabled || isLoadingState}
       {...props}
     >
-      {isLoading ? (
+      {isLoadingState ? (
         <ActivityIndicator
           color={variant === 'secondary' ? colors.primary.main : colors.ui.textInverse}
         />
       ) : (
-        <Text style={[styles.text, getTextStyle()]}>{title}</Text>
+        <Text style={[styles.text, getTextStyle()]}>{displayText}</Text>
       )}
     </TouchableOpacity>
   );
