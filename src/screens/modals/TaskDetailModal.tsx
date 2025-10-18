@@ -71,7 +71,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     <Modal
       visible={visible}
       animationType="slide"
-      presentationStyle="pageSheet"
+      presentationStyle={isCreateMode || isEditing ? "formSheet" : "pageSheet"}
       onRequestClose={onClose}
     >
       <View style={styles.container}>

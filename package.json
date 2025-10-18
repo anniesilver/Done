@@ -21,6 +21,7 @@
     "expo": "^54.0.13",
     "expo-notifications": "~0.32.12",
     "expo-status-bar": "~3.0.8",
+    "puppeteer": "^24.25.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-native": "0.81.4",

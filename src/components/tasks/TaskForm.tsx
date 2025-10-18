@@ -11,6 +11,7 @@ import { TaskRecurrenceSelector } from './TaskRecurrenceSelector';
 import { CategoryPicker } from '../categories/CategoryPicker';
 import { useCategoryStore } from '../../stores/categoryStore';
 import { colors, spacing, typography } from '../../config/theme';
+import { format } from 'date-fns';
 
 interface TaskFormProps {
   initialValues?: Partial<CreateTaskInput>;
@@ -42,17 +43,83 @@ export const TaskForm: React.FC<TaskFormProps> = ({
   );
   const [duration, setDuration] = useState(initialValues?.duration || 0);
 
+  // Helper to convert reminderTime to reminder setting strings
+  const getReminderSettingsFromTime = (reminderTime: Date | null, dueDate: Date | null): string[] => {
+    if (!reminderTime || !dueDate) return [];
+
+    const diffMinutes = Math.floor((new Date(dueDate).getTime() - new Date(reminderTime).getTime()) / 60000);
+
+    if (diffMinutes <= 5) return ['5 minutes before'];
+    if (diffMinutes <= 10) return ['10 minutes before'];
+    if (diffMinutes <= 30) return ['30 minutes before'];
+    if (diffMinutes <= 60) return ['1 hour before'];
+    if (diffMinutes <= 1440) return ['1 day before'];
+
+    return [];
+  };
+
+  // Helper to convert RecurrenceType to display string
+  const getRepeatSettingFromRecurrence = (recurrence: RecurrenceType): string => {
+    switch (recurrence) {
+      case 'daily': return 'Daily';
+      case 'weekly': return 'Weekly';
+      case 'monthly': return 'Monthly';
+      case 'yearly': return 'Yearly';
+      default: return 'None';
+    }
+  };
+
+  // New states for reminder and repeat from calendar modal
+  const [reminderSettings, setReminderSettings] = useState<string[]>(
+    getReminderSettingsFromTime(initialValues?.reminderTime || null, initialValues?.dueDate || null)
+  );
+  const [repeatSetting, setRepeatSetting] = useState<string>(
+    getRepeatSettingFromRecurrence(initialValues?.recurrence || 'none')
+  );
+
   const handleSubmit = () => {
     if (!text.trim()) {
       return;
     }
 
+    // Convert repeat setting to RecurrenceType
+    const getRecurrence = (repeat: string): RecurrenceType => {
+      switch (repeat.toLowerCase()) {
+        case 'daily': return 'daily';
+        case 'weekly': return 'weekly';
+        case 'monthly': return 'monthly';
+        case 'yearly': return 'yearly';
+        default: return 'none';
+      }
+    };
+
+    // Convert reminder settings to earliest reminder time
+    const calculateReminderTime = (reminders: string[], dueDate: Date | null): Date | null => {
+      if (!dueDate || reminders.length === 0) return null;
+
+      const reminderMinutes: { [key: string]: number } = {
+        '5 minutes before': 5,
+        '10 minutes before': 10,
+        '30 minutes before': 30,
+        '1 hour before': 60,
+        '1 day before': 1440,
+      };
+
+      // Get the earliest (largest number) reminder
+      const maxMinutes = Math.max(...reminders.map(r => reminderMinutes[r] || 0));
+      if (maxMinutes === 0) return null;
+
+      const reminderDate = new Date(dueDate);
+      reminderDate.setMinutes(reminderDate.getMinutes() - maxMinutes);
+      return reminderDate;
+    };
+
     const input: CreateTaskInput = {
       text: text.trim(),
       completed: false,
       dueDate,
-      reminderTime,
-      recurrence,
+      reminderTime: calculateReminderTime(reminderSettings, dueDate),
+      recurrence: getRecurrence(repeatSetting),
       categoryId,
       duration,
     };
@@ -61,7 +128,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.form}>
         {/* Task text input */}
         <View style={styles.field}>
@@ -77,31 +144,50 @@ export const TaskForm: React.FC<TaskFormProps> = ({
           />
         </View>
 
-        {/* Due Date */}
+        {/* Due Date with integrated time/reminder/repeat/duration */}
         <TaskTimeSelector
           value={dueDate}
           onChange={setDueDate}
           label="Due Date"
+          onReminderChange={setReminderSettings}
+          onRepeatChange={setRepeatSetting}
+          onDurationChange={setDuration}
+          reminderValue={reminderSettings}
+          repeatValue={repeatSetting}
+          durationValue={duration}
         />
 
-        {/* Reminder */}
-        <TaskReminderSelector
-          dueDate={dueDate}
-          value={reminderTime}
-          onChange={setReminderTime}
-        />
-
-        {/* Duration */}
-        <TaskDurationSelector
-          value={duration}
-          onChange={setDuration}
-        />
-
-        {/* Recurrence */}
-        <TaskRecurrenceSelector
-          value={recurrence}
-          onChange={setRecurrence}
-        />
+        {/* Display selected settings */}
+        {(reminderSettings.length > 0 || repeatSetting !== 'None' || dueDate || duration > 0) && (
+          <View style={styles.selectedSettings}>
+            {dueDate && (
+              <View style={styles.settingItem}>
+                <Text style={styles.settingLabel}>📅 Due:</Text>
+                <Text style={styles.settingValue}>{format(dueDate, 'MMM d, yyyy h:mm a')}</Text>
+              </View>
+            )}
+            {duration > 0 && (
+              <View style={styles.settingItem}>
+                <Text style={styles.settingLabel}>⏱️ Duration:</Text>
+                <Text style={styles.settingValue}>
+                  {duration < 60 ? `${duration} min` : `${Math.floor(duration / 60)}h ${duration % 60 > 0 ? `${duration % 60}m` : ''}`}
+                </Text>
+              </View>
+            )}
+            {reminderSettings.length > 0 && (
+              <View style={styles.settingItem}>
+                <Text style={styles.settingLabel}>🔔 Reminders:</Text>
+                <Text style={styles.settingValue}>{reminderSettings.join(', ')}</Text>
+              </View>
+            )}
+            {repeatSetting !== 'None' && (
+              <View style={styles.settingItem}>
+                <Text style={styles.settingLabel}>🔁 Repeat:</Text>
+                <Text style={styles.settingValue}>{repeatSetting}</Text>
+              </View>
+            )}
+          </View>
+        )}
 
         {/* Category */}
         <CategoryPicker
@@ -135,7 +221,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
           </View>
         </View>
       </View>
-    </ScrollView>
+    </View>
   );
 };
 
@@ -146,9 +232,10 @@ const styles = StyleSheet.create({
   },
   form: {
     padding: spacing.lg,
+    paddingBottom: spacing.md,
   },
   field: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
   label: {
     fontSize: typography.body.fontSize,
@@ -170,9 +257,30 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: 'row',
     gap: spacing.md,
-    marginTop: spacing.xl,
+    marginTop: spacing.lg,
   },
   button: {
     flex: 1,
+  },
+  selectedSettings: {
+    backgroundColor: colors.surface.light,
+    borderRadius: 8,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    gap: spacing.xs,
+  },
+  settingItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  settingLabel: {
+    fontSize: typography.caption.fontSize,
+    color: colors.text.secondary,
+    fontWeight: '600',
+  },
+  settingValue: {
+    fontSize: typography.caption.fontSize,
+    color: colors.text.primary,
   },
 });
