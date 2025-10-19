@@ -5,6 +5,7 @@ import { View, StyleSheet, RefreshControl, TouchableOpacity, Text } from 'react-
 import { TaskList } from '../../components/tasks/TaskList';
 import { CategoryList } from '../../components/categories/CategoryList';
 import { TaskDetailModal } from '../modals/TaskDetailModal';
+import { CategoryModal } from '../modals/CategoryModal';
 import { useTaskStore } from '../../stores/taskStore';
 import { useCategoryStore } from '../../stores/categoryStore';
 import { useUiStore } from '../../stores/uiStore';
@@ -14,6 +15,7 @@ import { Task } from '../../types/task';
 export const TasksScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
+  const [categoryModalVisible, setCategoryModalVisible] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   const tasks = useTaskStore((state) => state.tasks);
@@ -80,6 +82,7 @@ export const TasksScreen: React.FC = () => {
         selectedCategoryId={selectedCategory}
         onSelectCategory={setSelectedCategory}
         showAllOption={true}
+        onManageCategories={() => setCategoryModalVisible(true)}
       />
 
       {/* Tasks list */}
@@ -109,6 +112,12 @@ export const TasksScreen: React.FC = () => {
         visible={modalVisible}
         task={selectedTask}
         onClose={handleCloseModal}
+      />
+
+      {/* Category management modal */}
+      <CategoryModal
+        visible={categoryModalVisible}
+        onClose={() => setCategoryModalVisible(false)}
       />
     </View>
   );

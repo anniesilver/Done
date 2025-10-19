@@ -1,7 +1,7 @@
 // CategoryList component - Horizontal scrollable list of categories
 
 import React from 'react';
-import { ScrollView, View, Text, StyleSheet } from 'react-native';
+import { ScrollView, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Category } from '../../types/category';
 import { CategoryChip } from './CategoryChip';
 import { colors, spacing, typography } from '../../config/theme';
@@ -11,6 +11,7 @@ interface CategoryListProps {
   selectedCategoryId: number | null;
   onSelectCategory: (categoryId: number | null) => void;
   showAllOption?: boolean;
+  onManageCategories?: () => void; // NEW: Callback to open category management modal
 }
 
 export const CategoryList: React.FC<CategoryListProps> = ({
@@ -18,15 +19,8 @@ export const CategoryList: React.FC<CategoryListProps> = ({
   selectedCategoryId,
   onSelectCategory,
   showAllOption = true,
+  onManageCategories,
 }) => {
-  if (categories.length === 0) {
-    return (
-      <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>No categories yet</Text>
-      </View>
-    );
-  }
-
   return (
     <ScrollView
       horizontal
@@ -50,6 +44,17 @@ export const CategoryList: React.FC<CategoryListProps> = ({
           onPress={() => onSelectCategory(category.id)}
         />
       ))}
+
+      {/* Manage Categories Button */}
+      {onManageCategories && (
+        <TouchableOpacity
+          style={styles.manageButton}
+          onPress={onManageCategories}
+        >
+          <Text style={styles.manageButtonIcon}>⚙️</Text>
+          <Text style={styles.manageButtonText}>Manage</Text>
+        </TouchableOpacity>
+      )}
     </ScrollView>
   );
 };
@@ -71,5 +76,25 @@ const styles = StyleSheet.create({
     fontSize: typography.caption.fontSize,
     color: colors.text.disabled,
     fontStyle: 'italic',
+  },
+  manageButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.primary.main,
+    borderStyle: 'dashed',
+    backgroundColor: colors.surface.white,
+    gap: spacing.xs,
+  },
+  manageButtonIcon: {
+    fontSize: 16,
+  },
+  manageButtonText: {
+    fontSize: typography.caption.fontSize,
+    color: colors.primary.main,
+    fontWeight: '600',
   },
 });
