@@ -1,7 +1,7 @@
 // TaskList component - Scrollable list of tasks with empty state
 
 import React from 'react';
-import { FlatList, View, Text, StyleSheet, RefreshControl } from 'react-native';
+import { ScrollView, View, Text, StyleSheet, RefreshControl } from 'react-native';
 import { Task } from '../../types/task';
 import { TaskItem } from './TaskItem';
 import { colors, spacing, typography } from '../../config/theme';
@@ -25,31 +25,32 @@ export const TaskList: React.FC<TaskListProps> = ({
   emptyMessage = 'No tasks yet',
   refreshControl,
 }) => {
-  const renderItem = ({ item }: { item: Task }) => (
-    <TaskItem
-      task={item}
-      onToggleComplete={onToggleComplete}
-      onPress={onTaskPress ? () => onTaskPress(item) : undefined}
-      showCategory={showCategory}
-      categoryName={getCategoryName ? getCategoryName(item.categoryId) : undefined}
-    />
-  );
-
-  const renderEmpty = () => (
-    <View style={styles.emptyContainer}>
-      <Text style={styles.emptyText}>{emptyMessage}</Text>
-    </View>
-  );
+  if (tasks.length === 0) {
+    return (
+      <ScrollView
+        contentContainerStyle={styles.emptyList}
+        refreshControl={refreshControl}
+      >
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>{emptyMessage}</Text>
+        </View>
+      </ScrollView>
+    );
+  }
 
   return (
-    <FlatList
-      data={tasks}
-      renderItem={renderItem}
-      keyExtractor={(item) => item.id.toString()}
-      ListEmptyComponent={renderEmpty}
-      contentContainerStyle={tasks.length === 0 ? styles.emptyList : undefined}
-      refreshControl={refreshControl}
-    />
+    <ScrollView refreshControl={refreshControl}>
+      {tasks.map((task) => (
+        <TaskItem
+          key={task.id.toString()}
+          task={task}
+          onToggleComplete={onToggleComplete}
+          onPress={onTaskPress ? () => onTaskPress(task) : undefined}
+          showCategory={showCategory}
+          categoryName={getCategoryName ? getCategoryName(task.categoryId) : undefined}
+        />
+      ))}
+    </ScrollView>
   );
 };
 
