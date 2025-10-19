@@ -1,7 +1,7 @@
 // WeeklyView component - Horizontal swipeable week view
 
-import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions, FlatList } from 'react-native';
+import React, { useRef, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, ScrollView, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import { colors, spacing, typography } from '../../config/theme';
 import { startOfWeek, addDays, addWeeks, subWeeks, isSameDay, isToday, format } from 'date-fns';
 
@@ -9,80 +9,130 @@ interface WeeklyViewProps {
   currentDate: Date;
   selectedDate: Date | null;
   onSelectDate: (date: Date) => void;
+  onWeekChange?: (newDate: Date) => void; // Callback when week changes via swipe
   getTaskCountForDate?: (date: Date) => number;
 }
 
 const { width: screenWidth } = Dimensions.get('window');
-const HORIZONTAL_PADDING = spacing.md * 2; // Left + right padding
+const HORIZONTAL_PADDING = spacing.md * 2;
 const DAY_GAP = spacing.xs;
-const TOTAL_GAPS = DAY_GAP * 6; // 6 gaps between 7 days
+const TOTAL_GAPS = DAY_GAP * 6;
 const DAY_CARD_WIDTH = (screenWidth - HORIZONTAL_PADDING - TOTAL_GAPS) / 7;
+const WEEK_WIDTH = screenWidth;
 
 export const WeeklyView: React.FC<WeeklyViewProps> = ({
   currentDate,
   selectedDate,
   onSelectDate,
+  onWeekChange,
   getTaskCountForDate,
 }) => {
-  const weekStart = startOfWeek(currentDate);
-  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  // Generate 3 weeks: previous, current, next
+  const prevWeekStart = startOfWeek(subWeeks(currentDate, 1));
+  const currWeekStart = startOfWeek(currentDate);
+  const nextWeekStart = startOfWeek(addWeeks(currentDate, 1));
+
+  const weeks = [
+    { weekStart: prevWeekStart, index: 0 },
+    { weekStart: currWeekStart, index: 1 },
+    { weekStart: nextWeekStart, index: 2 },
+  ];
+
+  // Scroll to current week on mount and when currentDate changes
+  useEffect(() => {
+    scrollViewRef.current?.scrollTo({ x: WEEK_WIDTH, animated: false });
+  }, [currentDate]);
+
+  const handleScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const offsetX = event.nativeEvent.contentOffset.x;
+    const page = Math.round(offsetX / WEEK_WIDTH);
+
+    if (page === 0 && onWeekChange) {
+      // Scrolled to previous week
+      onWeekChange(subWeeks(currentDate, 1));
+    } else if (page === 2 && onWeekChange) {
+      // Scrolled to next week
+      onWeekChange(addWeeks(currentDate, 1));
+    }
+  };
+
+  const renderWeek = (weekStart: Date) => {
+    const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+
+    return (
+      <View style={styles.weekContainer}>
+        {weekDays.map((date) => {
+          const isSelected = selectedDate ? isSameDay(date, selectedDate) : false;
+          const isCurrentDay = isToday(date);
+          const taskCount = getTaskCountForDate ? getTaskCountForDate(date) : 0;
+
+          return (
+            <TouchableOpacity
+              key={date.toISOString()}
+              style={[
+                styles.dayCard,
+                isSelected && styles.dayCardSelected,
+                isCurrentDay && styles.dayCardToday,
+              ]}
+              onPress={() => onSelectDate(date)}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  styles.weekdayLabel,
+                  isSelected && styles.weekdayLabelSelected,
+                ]}
+              >
+                {format(date, 'EEE')}
+              </Text>
+
+              <Text
+                style={[
+                  styles.dayNumber,
+                  isSelected && styles.dayNumberSelected,
+                  isCurrentDay && styles.dayNumberToday,
+                ]}
+              >
+                {format(date, 'd')}
+              </Text>
+
+              {taskCount > 0 && (
+                <View style={[styles.taskIndicator, isSelected && styles.taskIndicatorSelected]}>
+                  <Text style={styles.taskCount}>
+                    {taskCount > 9 ? '9+' : taskCount}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    );
+  };
 
   return (
-    <View style={styles.container}>
-      {weekDays.map((date) => {
-        const isSelected = selectedDate ? isSameDay(date, selectedDate) : false;
-        const isCurrentDay = isToday(date);
-        const taskCount = getTaskCountForDate ? getTaskCountForDate(date) : 0;
-
-        return (
-          <TouchableOpacity
-            key={date.toISOString()}
-            style={[
-              styles.dayCard,
-              isSelected && styles.dayCardSelected,
-              isCurrentDay && styles.dayCardToday,
-            ]}
-            onPress={() => onSelectDate(date)}
-            activeOpacity={0.7}
-          >
-            {/* Weekday label */}
-            <Text
-              style={[
-                styles.weekdayLabel,
-                isSelected && styles.weekdayLabelSelected,
-              ]}
-            >
-              {format(date, 'EEE')}
-            </Text>
-
-            {/* Day number */}
-            <Text
-              style={[
-                styles.dayNumber,
-                isSelected && styles.dayNumberSelected,
-                isCurrentDay && styles.dayNumberToday,
-              ]}
-            >
-              {format(date, 'd')}
-            </Text>
-
-            {/* Task count indicator */}
-            {taskCount > 0 && (
-              <View style={[styles.taskIndicator, isSelected && styles.taskIndicatorSelected]}>
-                <Text style={styles.taskCount}>
-                  {taskCount > 9 ? '9+' : taskCount}
-                </Text>
-              </View>
-            )}
-          </TouchableOpacity>
-        );
-      })}
-    </View>
+    <ScrollView
+      ref={scrollViewRef}
+      horizontal
+      pagingEnabled
+      showsHorizontalScrollIndicator={false}
+      onMomentumScrollEnd={handleScrollEnd}
+      scrollEventThrottle={16}
+      decelerationRate="fast"
+    >
+      {weeks.map(({ weekStart, index }) => (
+        <View key={index} style={{ width: WEEK_WIDTH }}>
+          {renderWeek(weekStart)}
+        </View>
+      ))}
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  weekContainer: {
     flexDirection: 'row',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,

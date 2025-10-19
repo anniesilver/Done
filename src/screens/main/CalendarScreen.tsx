@@ -132,6 +132,7 @@ export const CalendarScreen: React.FC = () => {
             currentDate={currentMonth}
             selectedDate={selectedDate}
             onSelectDate={handleSelectDate}
+            onWeekChange={setCurrentMonth}
             getTaskCountForDate={getTaskCountForDate}
           />
         )}
