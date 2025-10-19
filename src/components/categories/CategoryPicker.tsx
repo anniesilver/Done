@@ -1,7 +1,7 @@
 // CategoryPicker component - Dropdown-style picker for selecting a category
 
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Modal, FlatList, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, ScrollView, StyleSheet } from 'react-native';
 import { Category } from '../../types/category';
 import { colors, spacing, typography } from '../../config/theme';
 
@@ -29,13 +29,14 @@ export const CategoryPicker: React.FC<CategoryPickerProps> = ({
     setIsModalVisible(false);
   };
 
-  const renderCategoryItem = ({ item }: { item: Category | null }) => {
+  const renderCategoryItem = (item: Category | null, index: number) => {
     const isSelected = item === null
       ? selectedCategoryId === null
       : selectedCategoryId === item.id;
 
     return (
       <TouchableOpacity
+        key={item?.id.toString() || 'none'}
         style={[styles.item, isSelected && styles.itemSelected]}
         onPress={() => handleSelect(item?.id || null)}
       >
@@ -86,12 +87,9 @@ export const CategoryPicker: React.FC<CategoryPickerProps> = ({
               </TouchableOpacity>
             </View>
 
-            <FlatList
-              data={data}
-              renderItem={renderCategoryItem}
-              keyExtractor={(item) => item?.id.toString() || 'none'}
-              style={styles.list}
-            />
+            <ScrollView style={styles.list}>
+              {data.map((item, index) => renderCategoryItem(item, index))}
+            </ScrollView>
           </View>
         </View>
       </Modal>
