@@ -10,7 +10,7 @@ import { useTaskStore } from '../../stores/taskStore';
 import { useCategoryStore } from '../../stores/categoryStore';
 import { useUiStore } from '../../stores/uiStore';
 import { colors, spacing, typography } from '../../config/theme';
-import { addMonths, subMonths, isSameDay } from 'date-fns';
+import { addMonths, subMonths, addWeeks, subWeeks, isSameDay } from 'date-fns';
 
 export const CalendarScreen: React.FC = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -35,11 +35,19 @@ export const CalendarScreen: React.FC = () => {
   }, []);
 
   const handlePreviousMonth = () => {
-    setCurrentMonth(subMonths(currentMonth, 1));
+    if (calendarViewMode === 'weekly') {
+      setCurrentMonth(subWeeks(currentMonth, 1));
+    } else {
+      setCurrentMonth(subMonths(currentMonth, 1));
+    }
   };
 
   const handleNextMonth = () => {
-    setCurrentMonth(addMonths(currentMonth, 1));
+    if (calendarViewMode === 'weekly') {
+      setCurrentMonth(addWeeks(currentMonth, 1));
+    } else {
+      setCurrentMonth(addMonths(currentMonth, 1));
+    }
   };
 
   const handleToday = () => {

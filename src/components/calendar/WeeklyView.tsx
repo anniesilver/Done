@@ -1,9 +1,9 @@
-// WeeklyView component - Horizontal scrollable week view
+// WeeklyView component - Horizontal swipeable week view
 
-import React from 'react';
-import { ScrollView, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, FlatList } from 'react-native';
 import { colors, spacing, typography } from '../../config/theme';
-import { startOfWeek, addDays, isSameDay, isToday, format } from 'date-fns';
+import { startOfWeek, addDays, addWeeks, subWeeks, isSameDay, isToday, format } from 'date-fns';
 
 interface WeeklyViewProps {
   currentDate: Date;
@@ -11,6 +11,12 @@ interface WeeklyViewProps {
   onSelectDate: (date: Date) => void;
   getTaskCountForDate?: (date: Date) => number;
 }
+
+const { width: screenWidth } = Dimensions.get('window');
+const HORIZONTAL_PADDING = spacing.md * 2; // Left + right padding
+const DAY_GAP = spacing.xs;
+const TOTAL_GAPS = DAY_GAP * 6; // 6 gaps between 7 days
+const DAY_CARD_WIDTH = (screenWidth - HORIZONTAL_PADDING - TOTAL_GAPS) / 7;
 
 export const WeeklyView: React.FC<WeeklyViewProps> = ({
   currentDate,
@@ -22,11 +28,7 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.container}
-    >
+    <View style={styles.container}>
       {weekDays.map((date) => {
         const isSelected = selectedDate ? isSameDay(date, selectedDate) : false;
         const isCurrentDay = isToday(date);
@@ -75,18 +77,20 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
           </TouchableOpacity>
         );
       })}
-    </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
+    flexDirection: 'row',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    gap: spacing.sm,
+    gap: DAY_GAP,
+    justifyContent: 'space-between',
   },
   dayCard: {
-    width: 60,
+    width: DAY_CARD_WIDTH,
     paddingVertical: spacing.sm,
     borderRadius: 12,
     borderWidth: 1,

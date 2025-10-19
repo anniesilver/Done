@@ -3,7 +3,7 @@
 import { create } from 'zustand';
 
 type ViewType = 'today' | 'tasks' | 'calendar';
-type CalendarViewMode = 'month' | 'week';
+type CalendarViewMode = 'monthly' | 'weekly';
 
 interface UIStore {
   // State
@@ -25,7 +25,7 @@ export const useUiStore = create<UIStore>((set) => ({
   currentView: 'today',
   selectedDate: new Date(),
   selectedCategory: null,
-  calendarViewMode: 'month',
+  calendarViewMode: 'weekly', // Default to weekly view
 
   // Actions
   setCurrentView: (view: ViewType) => set({ currentView: view }),
