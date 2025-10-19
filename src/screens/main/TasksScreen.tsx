@@ -146,6 +146,7 @@ const styles = StyleSheet.create({
   },
   fabText: {
     fontSize: 32,
+    lineHeight: 32,
     color: colors.surface.white,
     fontWeight: '300',
   },

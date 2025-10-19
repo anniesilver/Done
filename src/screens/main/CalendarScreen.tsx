@@ -6,14 +6,18 @@ import { CalendarHeader } from '../../components/calendar/CalendarHeader';
 import { CalendarGrid } from '../../components/calendar/CalendarGrid';
 import { WeeklyView } from '../../components/calendar/WeeklyView';
 import { TaskList } from '../../components/tasks/TaskList';
+import { TaskDetailModal } from '../modals/TaskDetailModal';
 import { useTaskStore } from '../../stores/taskStore';
 import { useCategoryStore } from '../../stores/categoryStore';
 import { useUiStore } from '../../stores/uiStore';
 import { colors, spacing, typography } from '../../config/theme';
 import { addMonths, subMonths, addWeeks, subWeeks, isSameDay } from 'date-fns';
+import { Task } from '../../types/task';
 
 export const CalendarScreen: React.FC = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   const tasks = useTaskStore((state) => state.tasks);
   const fetchTasks = useTaskStore((state) => state.fetchTasks);
@@ -67,6 +71,21 @@ export const CalendarScreen: React.FC = () => {
   const getCategoryName = (categoryId: number | null): string | undefined => {
     if (!categoryId) return undefined;
     return categories.find((c) => c.id === categoryId)?.name;
+  };
+
+  const handleCreateTask = () => {
+    setSelectedTask(null);
+    setModalVisible(true);
+  };
+
+  const handleTaskPress = (task: Task) => {
+    setSelectedTask(task);
+    setModalVisible(true);
+  };
+
+  const handleCloseModal = () => {
+    setModalVisible(false);
+    setSelectedTask(null);
   };
 
   const selectedDateTasks = selectedDate ? getTasksForDate(selectedDate) : [];
@@ -147,6 +166,7 @@ export const CalendarScreen: React.FC = () => {
             <TaskList
               tasks={selectedDateTasks}
               onToggleComplete={toggleComplete}
+              onTaskPress={handleTaskPress}
               showCategory={true}
               getCategoryName={getCategoryName}
               emptyMessage="No tasks for this date"
@@ -154,6 +174,18 @@ export const CalendarScreen: React.FC = () => {
           </View>
         )}
       </ScrollView>
+
+      {/* Add task button */}
+      <TouchableOpacity style={styles.fab} onPress={handleCreateTask}>
+        <Text style={styles.fabText}>+</Text>
+      </TouchableOpacity>
+
+      {/* Task detail/create modal */}
+      <TaskDetailModal
+        visible={modalVisible}
+        task={selectedTask}
+        onClose={handleCloseModal}
+      />
     </View>
   );
 };
@@ -200,5 +232,27 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.text.primary,
     marginBottom: spacing.md,
+  },
+  fab: {
+    position: 'absolute',
+    bottom: spacing.xl,
+    right: spacing.xl,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.primary.main,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  fabText: {
+    fontSize: 32,
+    lineHeight: 32,
+    color: colors.surface.white,
+    fontWeight: '300',
   },
 });
