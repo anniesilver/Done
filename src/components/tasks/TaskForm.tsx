@@ -1,7 +1,17 @@
 // TaskForm component - Form for creating/editing tasks
 
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  Keyboard,
+  TouchableWithoutFeedback
+} from 'react-native';
 import { CreateTaskInput, UpdateTaskInput, RecurrenceType } from '../../types/task';
 import { Button } from '../common/Button';
 import { TaskTimeSelector } from './TaskTimeSelector';
@@ -128,34 +138,50 @@ export const TaskForm: React.FC<TaskFormProps> = ({
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.form}>
-        {/* Task text input */}
-        <View style={styles.field}>
-          <Text style={styles.label}>Task</Text>
-          <TextInput
-            style={styles.input}
-            value={text}
-            onChangeText={setText}
-            placeholder="What do you need to do?"
-            multiline
-            numberOfLines={2}
-            autoFocus
-          />
-        </View>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
+    >
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View style={styles.form}>
+            {/* Task text input */}
+            <View style={styles.field}>
+              <Text style={styles.label}>Task</Text>
+              <TextInput
+                style={styles.input}
+                value={text}
+                onChangeText={setText}
+                placeholder="What do you need to do?"
+                multiline
+                numberOfLines={2}
+                autoFocus
+                returnKeyType="done"
+                blurOnSubmit={true}
+              />
+            </View>
 
-        {/* Due Date with integrated time/reminder/repeat/duration */}
-        <TaskTimeSelector
-          value={dueDate}
-          onChange={setDueDate}
-          label="Due Date"
-          onReminderChange={setReminderSettings}
-          onRepeatChange={setRepeatSetting}
-          onDurationChange={setDuration}
-          reminderValue={reminderSettings}
-          repeatValue={repeatSetting}
-          durationValue={duration}
-        />
+            {/* Due Date with integrated time/reminder/repeat/duration */}
+            <TaskTimeSelector
+              value={dueDate}
+              onChange={(date) => {
+                Keyboard.dismiss(); // Dismiss keyboard when opening date picker
+                setDueDate(date);
+              }}
+              label="Due Date"
+              onReminderChange={setReminderSettings}
+              onRepeatChange={setRepeatSetting}
+              onDurationChange={setDuration}
+              reminderValue={reminderSettings}
+              repeatValue={repeatSetting}
+              durationValue={duration}
+            />
 
         {/* Display selected settings */}
         {(reminderSettings.length > 0 || repeatSetting !== 'None' || dueDate || duration > 0) && (
@@ -198,30 +224,32 @@ export const TaskForm: React.FC<TaskFormProps> = ({
           allowNone={true}
         />
 
-        {/* Action buttons */}
-        <View style={styles.actions}>
-          <View style={styles.button}>
-            <Button
-              variant="secondary"
-              onPress={onCancel}
-              disabled={isLoading}
-            >
-              Cancel
-            </Button>
+            {/* Action buttons */}
+            <View style={styles.actions}>
+              <View style={styles.button}>
+                <Button
+                  variant="secondary"
+                  onPress={onCancel}
+                  disabled={isLoading}
+                >
+                  Cancel
+                </Button>
+              </View>
+              <View style={styles.button}>
+                <Button
+                  variant="primary"
+                  onPress={handleSubmit}
+                  disabled={!text.trim() || isLoading}
+                  loading={isLoading}
+                >
+                  {submitLabel}
+                </Button>
+              </View>
+            </View>
           </View>
-          <View style={styles.button}>
-            <Button
-              variant="primary"
-              onPress={handleSubmit}
-              disabled={!text.trim() || isLoading}
-              loading={isLoading}
-            >
-              {submitLabel}
-            </Button>
-          </View>
-        </View>
-      </View>
-    </View>
+        </TouchableWithoutFeedback>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
@@ -230,9 +258,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.surface.white,
   },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
   form: {
     padding: spacing.lg,
-    paddingBottom: spacing.md,
+    paddingBottom: spacing.xl,
   },
   field: {
     marginBottom: spacing.md,
@@ -258,6 +292,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.md,
     marginTop: spacing.lg,
+    paddingBottom: spacing.xl, // Extra padding to ensure buttons are visible above keyboard
   },
   button: {
     flex: 1,
