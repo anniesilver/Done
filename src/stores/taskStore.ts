@@ -148,12 +148,12 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   getTasksForDate: (date: Date) => {
     const tasks = get().tasks;
     const targetDate = new Date(date);
-    targetDate.setHours(0, 0, 0, 0);
+    targetDate.setUTCHours(0, 0, 0, 0);
 
     return tasks.filter((task) => {
       if (!task.dueDate) return false;
       const taskDate = new Date(task.dueDate);
-      taskDate.setHours(0, 0, 0, 0);
+      taskDate.setUTCHours(0, 0, 0, 0);
       return taskDate.getTime() === targetDate.getTime();
     });
   },
@@ -168,7 +168,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
 
   getTodayTasks: () => {
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    today.setUTCHours(0, 0, 0, 0);
     return get().getTasksForDate(today);
   },
 

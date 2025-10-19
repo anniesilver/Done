@@ -55,3 +55,6 @@ lighthouse-report.json
 
 # Build artifacts
 build/
+
+# Test coverage
+coverage/
