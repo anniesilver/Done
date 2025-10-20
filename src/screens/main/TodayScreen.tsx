@@ -1,8 +1,8 @@
 // TodayScreen - Main screen showing today's tasks with live clock
 
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, RefreshControl, Image } from 'react-native';
-import { TaskList } from '../../components/tasks/TaskList';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { TimelineView } from '../../components/calendar/TimelineView';
 import { TaskDetailModal } from '../modals/TaskDetailModal';
 import { useTaskStore } from '../../stores/taskStore';
 import { useCategoryStore } from '../../stores/categoryStore';
@@ -12,13 +12,11 @@ import { Task } from '../../types/task';
 
 export const TodayScreen: React.FC = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [refreshing, setRefreshing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
-  const tasks = useTaskStore((state) => state.tasks);
-  const isLoading = useTaskStore((state) => state.isLoading);
   const fetchTasks = useTaskStore((state) => state.fetchTasks);
+  const deleteTask = useTaskStore((state) => state.deleteTask);
   const toggleComplete = useTaskStore((state) => state.toggleComplete);
   const getTodayTasks = useTaskStore((state) => state.getTodayTasks);
 
@@ -40,25 +38,22 @@ export const TodayScreen: React.FC = () => {
     fetchCategories();
   }, []);
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await Promise.all([fetchTasks(), fetchCategories()]);
-    setRefreshing(false);
-  };
-
-  const getCategoryName = (categoryId: number | null): string | undefined => {
-    if (!categoryId) return undefined;
-    return categories.find((c) => c.id === categoryId)?.name;
-  };
-
   const handleCreateTask = () => {
     setSelectedTask(null);
     setModalVisible(true);
   };
 
-  const handleTaskPress = (task: Task) => {
+  const handleEditTask = (task: Task) => {
     setSelectedTask(task);
     setModalVisible(true);
+  };
+
+  const handleToggleComplete = async (taskId: number | string) => {
+    await toggleComplete(taskId);
+  };
+
+  const handleDeleteTask = async (taskId: number | string) => {
+    await deleteTask(taskId);
   };
 
   const handleCloseModal = () => {
@@ -107,17 +102,13 @@ export const TodayScreen: React.FC = () => {
         </View>
       </View>
 
-      {/* Today's tasks list */}
-      <TaskList
+      {/* Today's tasks timeline */}
+      <TimelineView
         tasks={todayTasks}
-        onToggleComplete={toggleComplete}
-        onTaskPress={handleTaskPress}
-        showCategory={true}
-        getCategoryName={getCategoryName}
-        emptyMessage="No tasks for today. Add one to get started!"
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
+        categories={categories}
+        onToggleComplete={handleToggleComplete}
+        onEditTask={handleEditTask}
+        onDeleteTask={handleDeleteTask}
       />
 
       {/* Add task button */}

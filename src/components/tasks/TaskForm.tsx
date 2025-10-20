@@ -10,7 +10,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   Keyboard,
-  TouchableWithoutFeedback
+  TouchableWithoutFeedback,
+  Alert,
 } from 'react-native';
 import { CreateTaskInput, UpdateTaskInput, RecurrenceType } from '../../types/task';
 import { Button } from '../common/Button';
@@ -20,6 +21,8 @@ import { TaskDurationSelector } from './TaskDurationSelector';
 import { TaskRecurrenceSelector } from './TaskRecurrenceSelector';
 import { CategoryPicker } from '../categories/CategoryPicker';
 import { useCategoryStore } from '../../stores/categoryStore';
+import { useTaskStore } from '../../stores/taskStore';
+import { validateTaskSchedule } from '../../utils/timeSlotValidation';
 import { colors, spacing, typography } from '../../config/theme';
 import { format } from 'date-fns';
 
@@ -29,6 +32,7 @@ interface TaskFormProps {
   onCancel: () => void;
   isLoading?: boolean;
   submitLabel?: string;
+  taskId?: number | string; // For overlap validation when editing
 }
 
 export const TaskForm: React.FC<TaskFormProps> = ({
@@ -37,8 +41,10 @@ export const TaskForm: React.FC<TaskFormProps> = ({
   onCancel,
   isLoading = false,
   submitLabel = 'Create Task',
+  taskId,
 }) => {
   const categories = useCategoryStore((state) => state.categories);
+  const getTodayTasks = useTaskStore((state) => state.getTodayTasks);
 
   const [text, setText] = useState(initialValues?.text || '');
   const [dueDate, setDueDate] = useState<Date | null>(initialValues?.dueDate || null);
@@ -51,7 +57,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
   const [categoryId, setCategoryId] = useState<number | null>(
     initialValues?.categoryId || null
   );
-  const [duration, setDuration] = useState(initialValues?.duration || 0);
+  const [duration, setDuration] = useState(initialValues?.duration || 15);
 
   // Helper to convert reminderTime to reminder setting strings
   const getReminderSettingsFromTime = (reminderTime: Date | null, dueDate: Date | null): string[] => {
@@ -123,6 +129,22 @@ export const TaskForm: React.FC<TaskFormProps> = ({
       reminderDate.setMinutes(reminderDate.getMinutes() - maxMinutes);
       return reminderDate;
     };
+
+    // Validate time slot to prevent overlaps (only if dueDate and duration are set)
+    if (dueDate && duration > 0) {
+      const todayTasks = getTodayTasks();
+      const validation = validateTaskSchedule(dueDate, duration, todayTasks, taskId);
+
+      if (!validation.isValid) {
+        const conflictNames = validation.conflicts.map(t => `• ${t.text}`).join('\n');
+        Alert.alert(
+          'Time Conflict',
+          `This time slot overlaps with:\n\n${conflictNames}\n\nPlease choose a different time.`,
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+    }
 
     const input: CreateTaskInput = {
       text: text.trim(),

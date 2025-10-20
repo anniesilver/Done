@@ -909,9 +909,94 @@ async toggleComplete(id: number | string) {
 
 ---
 
+#### 1.7 Timeline View Refinement (4 hours) - Added Post-Initial Development
+
+**Goal:** Transform Today view from simple list into visual timeline scheduler
+
+**Features:**
+- Timeline view with 24-hour time slots (00:00-23:59)
+- Tasks positioned at their scheduled time with visual time blocks
+- Category-based color coding for easy visual identification
+- Inline action icons on each task:
+  - ✓ **Checkmark**: Toggle completion status
+  - ✎ **Edit**: Open edit modal
+  - ✕ **Delete**: Remove task
+- Overlap prevention in create/edit flow
+- Default task duration: 15 minutes (changed from 0)
+- Current time indicator (red line)
+- Auto-scroll to current hour on load
+
+**Technical Changes:**
+
+**New Components:**
+- `src/components/calendar/TimelineView.tsx` - Main timeline component
+  - Left column: Time labels (00:00-23:00)
+  - Right column: Task blocks positioned by time
+  - Each block shows: task text + 3 action icons
+  - Completed tasks: Grayed out with strikethrough
+
+**New Utilities:**
+- `src/utils/timeSlotValidation.ts` - Overlap detection
+  - `hasOverlap()`: Check if two time slots overlap
+  - `getOverlappingTasks()`: Find conflicting tasks
+  - Used in TaskForm to prevent scheduling conflicts
+
+**Modified Files:**
+- `src/components/tasks/TaskForm.tsx`:
+  - Default duration: `0` → `15` minutes
+  - Add overlap validation before submit
+  - Show alert with conflicting task names
+- `src/screens/main/TodayScreen.tsx`:
+  - Replace `TaskList` with `TimelineView`
+  - Pass handlers: `onToggleComplete`, `onEditTask`, `onDeleteTask`
+- `src/stores/taskStore.ts`:
+  - Add `getTasksWithTimeSlots()` helper method
+
+**Layout Specification:**
+```
+┌─────────┬──────────────────────────────────────┐
+│  00:00  │                                      │
+│         │  ┌──────────────────────────────┐   │
+│  03:00  │  │ Morning Meeting              │   │
+│         │  │              [✓] [✎] [✕]     │   │
+│         │  └──────────────────────────────┘   │
+│  05:00  │  ┌──────────────────────────────┐   │
+│         │  │ ✓ Workout (completed)        │   │
+│         │  │              [✓] [✎] [✕]     │   │
+│         │  └──────────────────────────────┘   │
+└─────────┴──────────────────────────────────────┘
+```
+
+**Styling:**
+- Hour height: 60px (1px = 1 minute)
+- Task block minimum height: 30px
+- Category colors with 80% opacity
+- Completed tasks: 30% opacity, strikethrough
+- Icons: 20px, 8px spacing
+- Border radius: 8px, shadow for depth
+
+**Deliverables:**
+- ✅ Visual timeline scheduler in Today view
+- ✅ Time-based task positioning
+- ✅ Inline complete/edit/delete actions
+- ✅ Overlap prevention with user feedback
+- ✅ Current time indicator
+- ✅ Category color coding
+
+**Test:**
+- Create task at 09:00 with 30min duration → appears in correct time slot
+- Try to create overlapping task → shows conflict alert with task names
+- Click checkmark → task grays out, strikethrough applied
+- Click edit → modal opens with task data
+- Click delete → task removed from timeline
+- Scroll timeline → current hour visible
+- Complete task → stays in position but grayed out
+
+---
+
 **Phase 1 Summary:**
-- **Time:** 50 hours
-- **Deliverables:** Fully functional app (online-only) with all 3 views, auth, CRUD, recurring tasks, timer
+- **Time:** 54 hours (50 + 4 for timeline refinement)
+- **Deliverables:** Fully functional app (online-only) with all 3 views, auth, CRUD, recurring tasks, timer, timeline scheduler
 - **Deferred:** Offline support (Phase 2), Notifications (Phase 3)
 - **Deploy:** Web to Vercel at end of Phase 1 for testing
 

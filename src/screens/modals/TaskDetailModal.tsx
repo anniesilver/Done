@@ -118,6 +118,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                   }
                 : undefined
             }
+            taskId={task?.id}
             onSubmit={isCreateMode ? handleCreate : handleUpdate}
             onCancel={isCreateMode ? onClose : () => setIsEditing(false)}
             isLoading={isLoading}
