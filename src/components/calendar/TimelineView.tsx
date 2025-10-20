@@ -62,14 +62,20 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
 
   // Get task height based on duration
   const getTaskHeight = (duration: number): number => {
-    return Math.max((duration * HOUR_HEIGHT) / 60, 30); // Minimum 30px height
+    return Math.max((duration * HOUR_HEIGHT) / 60, 80); // Minimum 80px height for text + icons
   };
 
-  // Get category color
+  // Get category color based on category ID
   const getCategoryColor = (categoryId: number | null): string => {
-    if (!categoryId) return colors.surface.medium;
+    if (!categoryId) return colors.categories[0]; // Default to first color
+
+    // Map category ID to color array (cycle through 10 colors)
     const category = categories.find(c => c.id === categoryId);
-    return category?.color || colors.surface.medium;
+    if (!category) return colors.categories[0];
+
+    // Use category ID to pick color from palette
+    const colorIndex = (categoryId - 1) % colors.categories.length;
+    return colors.categories[colorIndex];
   };
 
   // Render hour labels (00:00 - 23:00)
