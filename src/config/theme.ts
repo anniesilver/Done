@@ -18,6 +18,7 @@ export const colors = {
     success: '#10b981', // Green - completed tasks
     warning: '#f59e0b', // Amber - due soon
     error: '#ef4444',   // Red - overdue
+    danger: '#ef4444',  // Alias for error
     info: '#06b6d4',    // Cyan - information
   },
 
@@ -47,7 +48,24 @@ export const colors = {
     textDisabled: '#9ca3af',    // Light gray disabled
     textInverse: '#ffffff',     // White text
   },
+
+  // Aliases for easier access in components
+  surface: {
+    white: '#ffffff',
+    light: '#f9fafb',
+    medium: '#e5e7eb',
+    dark: '#1f2937',
+  },
+
+  text: {
+    primary: '#1f2937',
+    secondary: '#6b7280',
+    disabled: '#9ca3af',
+  },
 };
+
+// Export CATEGORY_COLORS as an alias for compatibility
+export const CATEGORY_COLORS = colors.categories;
 
 // Gradient definitions
 export const gradients = {
@@ -101,6 +119,32 @@ export const typography = {
     medium: '500',
     semibold: '600',
     bold: '700',
+  },
+  // Text style presets for components
+  h1: {
+    fontSize: 36,
+    fontWeight: '700',
+    lineHeight: 1.2,
+  },
+  h2: {
+    fontSize: 30,
+    fontWeight: '700',
+    lineHeight: 1.2,
+  },
+  h3: {
+    fontSize: 24,
+    fontWeight: '600',
+    lineHeight: 1.2,
+  },
+  body: {
+    fontSize: 16,
+    fontWeight: '400',
+    lineHeight: 1.5,
+  },
+  caption: {
+    fontSize: 14,
+    fontWeight: '400',
+    lineHeight: 1.5,
   },
 };
 

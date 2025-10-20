@@ -47,5 +47,15 @@ yarn-error.*
 *.swo
 *~
 
+# Claude Code
+.claude/settings.local.json
+
+# Reports
+lighthouse-report.json
+
 # Build artifacts
 build/
+
+# Test coverage
+coverage/
+NUL
