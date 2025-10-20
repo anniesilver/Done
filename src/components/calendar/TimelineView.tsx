@@ -16,7 +16,7 @@ interface TimelineViewProps {
   onDeleteTask: (taskId: number | string) => void;
 }
 
-const HOUR_HEIGHT = 60; // pixels per hour (1px = 1 minute)
+const HOUR_HEIGHT = 80; // pixels per hour (1.33px per minute for better visibility)
 const TIME_COLUMN_WIDTH = 60;
 const { width: screenWidth } = Dimensions.get('window');
 const TASK_COLUMN_WIDTH = screenWidth - TIME_COLUMN_WIDTH - spacing.md * 2;
@@ -60,9 +60,11 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
     return (hours * HOUR_HEIGHT) + (minutes * (HOUR_HEIGHT / 60));
   };
 
-  // Get task height based on duration
+  // Get task height based on duration (proportional to time)
   const getTaskHeight = (duration: number): number => {
-    return Math.max((duration * HOUR_HEIGHT) / 60, 80); // Minimum 80px height for text + icons
+    // Calculate height: duration in minutes * (HOUR_HEIGHT / 60 minutes)
+    // 15 min = 20px, 30 min = 40px, 60 min = 80px
+    return (duration * HOUR_HEIGHT) / 60;
   };
 
   // Get category color based on category ID
@@ -146,7 +148,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
           >
             <Icon
               name={isCompleted ? "checkbox-marked" : "checkbox-blank-outline"}
-              size={20}
+              size={16}
               color={isCompleted ? colors.semantic.success : colors.surface.white}
             />
           </TouchableOpacity>
@@ -157,7 +159,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
             style={styles.iconButton}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Icon name="pencil" size={20} color={colors.surface.white} />
+            <Icon name="pencil" size={16} color={colors.surface.white} />
           </TouchableOpacity>
 
           {/* Delete */}
@@ -166,7 +168,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
             style={styles.iconButton}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Icon name="delete" size={20} color={colors.surface.white} />
+            <Icon name="delete" size={16} color={colors.surface.white} />
           </TouchableOpacity>
         </View>
       </View>
@@ -273,41 +275,44 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: spacing.sm,
     right: spacing.sm,
-    borderRadius: 8,
-    padding: spacing.sm,
+    borderRadius: 6,
+    padding: spacing.xs,
+    paddingTop: 4,
+    paddingBottom: 4,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 2,
+    elevation: 2,
     justifyContent: 'space-between',
   },
   taskText: {
-    fontSize: typography.body.fontSize,
+    fontSize: 13,
     color: colors.surface.white,
     fontWeight: '600',
-    marginBottom: spacing.xs,
+    marginBottom: 2,
+    lineHeight: 16,
   },
   taskTextCompleted: {
     textDecorationLine: 'line-through',
     opacity: 0.7,
   },
   taskTime: {
-    fontSize: typography.caption.fontSize,
+    fontSize: 11,
     color: colors.surface.white,
     opacity: 0.9,
-    marginBottom: spacing.xs,
+    marginBottom: 2,
   },
   actionIcons: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    gap: spacing.sm,
-    marginTop: spacing.xs,
+    gap: 4,
+    marginTop: 2,
   },
   iconButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: 'rgba(0, 0, 0, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
