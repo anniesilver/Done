@@ -33,8 +33,12 @@ module.exports = {
     plugins: [],
     platforms: ['ios', 'android', 'web'],
     extra: {
-      supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
-      supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+      eas: {
+        projectId: "152dd094-92cb-4877-84cf-dabc43fd0af9"
+      },
+      supabaseUrl: "https://bsnmiprwtlgouvngaykg.supabase.co",
+      supabaseAnonKey: "sb_publishable_Vs-fZ6lR9NgZ4_3EG_ugLQ_Oexv02tH",
     },
+    owner: "annieyang",
   },
 };
