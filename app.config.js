@@ -14,7 +14,7 @@ module.exports = {
     assetBundlePatterns: ['**/*'],
     ios: {
       supportsTablet: true,
-      bundleIdentifier: 'com.done.app',
+      bundleIdentifier: 'com.anniesilver.done',
       infoPlist: {
         UIBackgroundModes: ['remote-notification'],
       },
