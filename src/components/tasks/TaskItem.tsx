@@ -28,6 +28,13 @@ export const TaskItem: React.FC<TaskItemProps> = ({
 }) => {
   const swipeableRef = React.useRef<Swipeable>(null);
 
+  // Get category color based on category ID
+  const getCategoryColor = () => {
+    if (!task.categoryId) return colors.categories[0];
+    const colorIndex = (task.categoryId - 1) % colors.categories.length;
+    return colors.categories[colorIndex];
+  };
+
   const handleCheckboxPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onToggleComplete(task.id);
@@ -163,7 +170,10 @@ export const TaskItem: React.FC<TaskItemProps> = ({
           {/* Metadata row */}
           <View style={styles.metadata}>
             {showCategory && categoryName && (
-              <Text style={styles.categoryText}>{categoryName}</Text>
+              <View style={styles.categoryContainer}>
+                <View style={[styles.categoryDot, { backgroundColor: getCategoryColor() }]} />
+                <Text style={styles.categoryText}>{categoryName}</Text>
+              </View>
             )}
 
             {task.dueDate && (
@@ -178,7 +188,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({
 
             {task.recurrence !== 'none' && (
               <Text style={styles.recurrenceText}>
-                🔁 {task.recurrence}
+                ↻ {task.recurrence}
               </Text>
             )}
           </View>
@@ -233,11 +243,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
+    alignItems: 'center',
+  },
+  categoryContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  categoryDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   categoryText: {
     fontSize: typography.caption.fontSize,
-    color: colors.primary.main,
-    fontWeight: '600',
+    color: colors.text.secondary,
+    fontWeight: '500',
   },
   dueDateText: {
     fontSize: typography.caption.fontSize,

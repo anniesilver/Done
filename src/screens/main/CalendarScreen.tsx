@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Text } from 'react-native';
+import SegmentedControl from '@react-native-segmented-control/segmented-control';
 import * as Haptics from 'expo-haptics';
 import { CalendarHeader } from '../../components/calendar/CalendarHeader';
 import { CalendarGrid } from '../../components/calendar/CalendarGrid';
@@ -104,41 +105,18 @@ export const CalendarScreen: React.FC = () => {
           onToday={handleToday}
         />
 
-        {/* View mode toggle */}
+        {/* View mode toggle - iOS Segmented Control */}
         <View style={styles.viewToggle}>
-          <TouchableOpacity
-            style={[
-              styles.toggleButton,
-              calendarViewMode === 'monthly' && styles.toggleButtonActive,
-            ]}
-            onPress={() => setCalendarViewMode('monthly')}
-          >
-            <Text
-              style={[
-                styles.toggleText,
-                calendarViewMode === 'monthly' && styles.toggleTextActive,
-              ]}
-            >
-              Month
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.toggleButton,
-              calendarViewMode === 'weekly' && styles.toggleButtonActive,
-            ]}
-            onPress={() => setCalendarViewMode('weekly')}
-          >
-            <Text
-              style={[
-                styles.toggleText,
-                calendarViewMode === 'weekly' && styles.toggleTextActive,
-              ]}
-            >
-              Week
-            </Text>
-          </TouchableOpacity>
+          <SegmentedControl
+            values={['Month', 'Week']}
+            selectedIndex={calendarViewMode === 'monthly' ? 0 : 1}
+            onChange={(event) => {
+              Haptics.selectionAsync();
+              const index = event.nativeEvent.selectedSegmentIndex;
+              setCalendarViewMode(index === 0 ? 'monthly' : 'weekly');
+            }}
+            style={styles.segmentedControl}
+          />
         </View>
 
         {/* Calendar view */}
@@ -200,32 +178,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface.white,
   },
   viewToggle: {
-    flexDirection: 'row',
-    padding: spacing.md,
-    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: colors.surface.light,
   },
-  toggleButton: {
-    flex: 1,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.surface.medium,
-    alignItems: 'center',
-  },
-  toggleButtonActive: {
-    backgroundColor: colors.primary.main,
-    borderColor: colors.primary.main,
-  },
-  toggleText: {
-    fontSize: typography.body.fontSize,
-    color: colors.text.primary,
-    fontWeight: '600',
-  },
-  toggleTextActive: {
-    color: colors.surface.white,
+  segmentedControl: {
+    height: 32,
   },
   tasksSection: {
     padding: spacing.md,
