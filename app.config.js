@@ -17,6 +17,7 @@ module.exports = {
       bundleIdentifier: 'com.anniesilver.done',
       infoPlist: {
         UIBackgroundModes: ['remote-notification'],
+        ITSAppUsesNonExemptEncryption: false,
       },
     },
     android: {
