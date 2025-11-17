@@ -133,9 +133,10 @@ export const TaskItem: React.FC<TaskItemProps> = ({
       overshootLeft={false}
       rightThreshold={40}
       leftThreshold={40}
+      friction={2}
     >
       <TouchableOpacity
-        style={styles.container}
+        style={[styles.container, { backgroundColor: colors.surface.white }]}
         onPress={handlePress}
         activeOpacity={0.7}
       >
