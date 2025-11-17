@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { TimelineView } from '../../components/calendar/TimelineView';
 import { TaskDetailModal } from '../modals/TaskDetailModal';
 import { useTaskStore } from '../../stores/taskStore';
@@ -39,6 +40,7 @@ export const TodayScreen: React.FC = () => {
   }, []);
 
   const handleCreateTask = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setSelectedTask(null);
     setModalVisible(true);
   };

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Text } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { CalendarHeader } from '../../components/calendar/CalendarHeader';
 import { CalendarGrid } from '../../components/calendar/CalendarGrid';
 import { WeeklyView } from '../../components/calendar/WeeklyView';
@@ -22,6 +23,7 @@ export const CalendarScreen: React.FC = () => {
   const tasks = useTaskStore((state) => state.tasks);
   const fetchTasks = useTaskStore((state) => state.fetchTasks);
   const toggleComplete = useTaskStore((state) => state.toggleComplete);
+  const deleteTask = useTaskStore((state) => state.deleteTask);
   const getTasksForDate = useTaskStore((state) => state.getTasksForDate);
 
   const categories = useCategoryStore((state) => state.categories);
@@ -74,6 +76,7 @@ export const CalendarScreen: React.FC = () => {
   };
 
   const handleCreateTask = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setSelectedTask(null);
     setModalVisible(true);
   };
@@ -167,6 +170,7 @@ export const CalendarScreen: React.FC = () => {
               tasks={selectedDateTasks}
               onToggleComplete={toggleComplete}
               onTaskPress={handleTaskPress}
+              onDeleteTask={deleteTask}
               showCategory={true}
               getCategoryName={getCategoryName}
               emptyMessage="No tasks for this date"

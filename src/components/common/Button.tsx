@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   TouchableOpacityProps,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { colors, spacing, borderRadius, typography } from '../../config/theme';
 
 interface ButtonProps extends TouchableOpacityProps {
@@ -26,10 +27,19 @@ export const Button: React.FC<ButtonProps> = ({
   fullWidth = false,
   disabled,
   style,
+  onPress,
   ...props
 }) => {
   const isLoadingState = loading || isLoading;
   const displayText = title || children;
+
+  const handlePress = (event: any) => {
+    if (!disabled && !isLoadingState) {
+      Haptics.selectionAsync();
+      onPress?.(event);
+    }
+  };
+
   const getButtonStyle = () => {
     switch (variant) {
       case 'secondary':
@@ -62,6 +72,7 @@ export const Button: React.FC<ButtonProps> = ({
         style,
       ]}
       disabled={disabled || isLoadingState}
+      onPress={handlePress}
       {...props}
     >
       {isLoadingState ? (

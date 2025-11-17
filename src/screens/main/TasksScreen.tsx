@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, RefreshControl, TouchableOpacity, Text } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { TaskList } from '../../components/tasks/TaskList';
 import { CategoryList } from '../../components/categories/CategoryList';
 import { TaskDetailModal } from '../modals/TaskDetailModal';
@@ -21,6 +22,7 @@ export const TasksScreen: React.FC = () => {
   const tasks = useTaskStore((state) => state.tasks);
   const fetchTasks = useTaskStore((state) => state.fetchTasks);
   const toggleComplete = useTaskStore((state) => state.toggleComplete);
+  const deleteTask = useTaskStore((state) => state.deleteTask);
   const getTasksByCategory = useTaskStore((state) => state.getTasksByCategory);
 
   const categories = useCategoryStore((state) => state.categories);
@@ -47,6 +49,7 @@ export const TasksScreen: React.FC = () => {
   };
 
   const handleCreateTask = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setSelectedTask(null);
     setModalVisible(true);
   };
@@ -90,6 +93,7 @@ export const TasksScreen: React.FC = () => {
         tasks={sortedTasks}
         onToggleComplete={toggleComplete}
         onTaskPress={handleTaskPress}
+        onDeleteTask={deleteTask}
         showCategory={selectedCategory === null}
         getCategoryName={getCategoryName}
         emptyMessage={
