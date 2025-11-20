@@ -20,6 +20,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   onClose,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
+  const [submitForm, setSubmitForm] = useState<(() => void) | null>(null);
 
   const addTask = useTaskStore((state) => state.addTask);
   const updateTask = useTaskStore((state) => state.updateTask);
@@ -85,7 +86,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
 
           <Text style={styles.headerTitle}>
             {isCreateMode
-              ? 'Create Task'
+              ? 'New Task'
               : isEditing
               ? 'Edit Task'
               : 'Task Details'}
@@ -100,7 +101,17 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
             </TouchableOpacity>
           )}
 
-          {(isCreateMode || isEditing) && <View style={styles.headerButton} />}
+          {(isCreateMode || isEditing) && (
+            <TouchableOpacity
+              onPress={() => submitForm && submitForm()}
+              style={styles.headerButton}
+              disabled={isLoading}
+            >
+              <Text style={[styles.headerButtonText, isLoading && styles.headerButtonTextDisabled]}>
+                Done
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Content */}
@@ -120,9 +131,10 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
             }
             taskId={task?.id}
             onSubmit={isCreateMode ? handleCreate : handleUpdate}
-            onCancel={isCreateMode ? onClose : () => setIsEditing(false)}
+            onClose={onClose}
             isLoading={isLoading}
-            submitLabel={isCreateMode ? 'Create Task' : 'Save Changes'}
+            isCreateMode={isCreateMode}
+            onSubmitReady={setSubmitForm}
           />
         ) : task ? (
           <ScrollView style={styles.content}>
@@ -221,6 +233,9 @@ const styles = StyleSheet.create({
     fontSize: typography.body.fontSize,
     color: colors.primary.main,
     fontWeight: '600',
+  },
+  headerButtonTextDisabled: {
+    color: colors.text.disabled,
   },
   content: {
     flex: 1,

@@ -1,8 +1,10 @@
-// CategoryPicker component - Dropdown-style picker for selecting a category
+// CategoryPicker component - iOS-style picker for selecting a category
 
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Modal, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { Category } from '../../types/category';
+import { CategoryFilterModal } from './CategoryFilterModal';
 import { colors, spacing, typography } from '../../config/theme';
 
 interface CategoryPickerProps {
@@ -11,6 +13,7 @@ interface CategoryPickerProps {
   onSelectCategory: (categoryId: number | null) => void;
   label?: string;
   allowNone?: boolean;
+  showWarning?: boolean;
 }
 
 export const CategoryPicker: React.FC<CategoryPickerProps> = ({
@@ -19,6 +22,7 @@ export const CategoryPicker: React.FC<CategoryPickerProps> = ({
   onSelectCategory,
   label = 'Category',
   allowNone = true,
+  showWarning = false,
 }) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
 
@@ -26,171 +30,107 @@ export const CategoryPicker: React.FC<CategoryPickerProps> = ({
 
   const handleSelect = (categoryId: number | null) => {
     onSelectCategory(categoryId);
-    setIsModalVisible(false);
   };
 
-  const renderCategoryItem = (item: Category | null, index: number) => {
-    const isSelected = item === null
-      ? selectedCategoryId === null
-      : selectedCategoryId === item.id;
-
-    return (
-      <TouchableOpacity
-        key={item?.id.toString() || 'none'}
-        style={[styles.item, isSelected && styles.itemSelected]}
-        onPress={() => handleSelect(item?.id || null)}
-      >
-        <Text style={styles.itemIcon}>{item?.icon || '❌'}</Text>
-        <Text style={[styles.itemName, isSelected && styles.itemNameSelected]}>
-          {item?.name || 'No Category'}
-        </Text>
-        {isSelected && <Text style={styles.checkmark}>✓</Text>}
-      </TouchableOpacity>
-    );
+  const handlePress = () => {
+    Haptics.selectionAsync();
+    setIsModalVisible(true);
   };
 
-  const data = allowNone ? [null, ...categories] : categories;
+  // Get category color
+  const getCategoryColor = () => {
+    if (!selectedCategory || !selectedCategory.id) return colors.text.disabled;
+    const colorIndex = (selectedCategory.id - 1) % colors.categories.length;
+    return colors.categories[colorIndex];
+  };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>{label}</Text>
-
       <TouchableOpacity
         style={styles.selector}
-        onPress={() => setIsModalVisible(true)}
+        onPress={handlePress}
       >
-        {selectedCategory ? (
-          <>
-            <Text style={styles.selectorIcon}>{selectedCategory.icon}</Text>
-            <Text style={styles.selectorText}>{selectedCategory.name}</Text>
-          </>
-        ) : (
-          <Text style={styles.selectorPlaceholder}>
-            {allowNone ? 'No Category' : 'Select a category'}
-          </Text>
-        )}
-        <Text style={styles.arrow}>▼</Text>
+        <View style={styles.selectorLeft}>
+          <Text style={styles.labelText}>{label}</Text>
+          {showWarning && <Text style={styles.warning}>⚠️</Text>}
+        </View>
+        <View style={styles.selectorRight}>
+          {selectedCategory ? (
+            <>
+              <View style={[styles.dot, { backgroundColor: getCategoryColor() }]} />
+              <Text style={styles.selectorText}>{selectedCategory.name}</Text>
+            </>
+          ) : (
+            <Text style={[styles.selectorPlaceholder, showWarning && styles.placeholderWarning]}>
+              {allowNone ? 'None' : 'Select'}
+            </Text>
+          )}
+          <Text style={styles.chevron}>▶</Text>
+        </View>
       </TouchableOpacity>
 
-      <Modal
+      <CategoryFilterModal
         visible={isModalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setIsModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Category</Text>
-              <TouchableOpacity onPress={() => setIsModalVisible(false)}>
-                <Text style={styles.closeButton}>✕</Text>
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.list}>
-              {data.map((item, index) => renderCategoryItem(item, index))}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
+        categories={categories}
+        selectedCategoryId={selectedCategoryId}
+        onSelectCategory={handleSelect}
+        onManageCategories={() => {}}
+        onClose={() => setIsModalVisible(false)}
+      />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: spacing.md,
-  },
-  label: {
-    fontSize: typography.body.fontSize,
-    fontWeight: '600',
-    color: colors.text.primary,
-    marginBottom: spacing.xs,
+    borderTopWidth: 1,
+    borderTopColor: colors.surface.medium,
   },
   selector: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.surface.medium,
-    borderRadius: 8,
-    padding: spacing.md,
+    justifyContent: 'space-between',
+    paddingVertical: spacing.sm + 2,
+    paddingHorizontal: spacing.lg,
     backgroundColor: colors.surface.white,
-    gap: spacing.sm,
+    minHeight: 44,
   },
-  selectorIcon: {
-    fontSize: 20,
+  selectorLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  selectorText: {
-    flex: 1,
+  labelText: {
     fontSize: typography.body.fontSize,
     color: colors.text.primary,
   },
+  warning: {
+    fontSize: 16,
+    marginLeft: spacing.xs,
+  },
+  selectorRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  selectorText: {
+    fontSize: typography.body.fontSize,
+    color: colors.text.secondary,
+  },
   selectorPlaceholder: {
-    flex: 1,
     fontSize: typography.body.fontSize,
     color: colors.text.disabled,
   },
-  arrow: {
+  placeholderWarning: {
+    color: colors.semantic.warning,
+  },
+  chevron: {
     fontSize: 12,
-    color: colors.text.secondary,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: colors.surface.white,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    maxHeight: '70%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surface.light,
-  },
-  modalTitle: {
-    fontSize: typography.h3.fontSize,
-    fontWeight: '600',
-    color: colors.text.primary,
-  },
-  closeButton: {
-    fontSize: 24,
-    color: colors.text.secondary,
-    padding: spacing.xs,
-  },
-  list: {
-    flexGrow: 0,
-  },
-  item: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surface.light,
-    gap: spacing.md,
-  },
-  itemSelected: {
-    backgroundColor: colors.primary.light + '20',
-  },
-  itemIcon: {
-    fontSize: 24,
-  },
-  itemName: {
-    flex: 1,
-    fontSize: typography.body.fontSize,
-    color: colors.text.primary,
-  },
-  itemNameSelected: {
-    fontWeight: '600',
-    color: colors.primary.dark,
-  },
-  checkmark: {
-    fontSize: 20,
-    color: colors.primary.main,
+    color: colors.text.disabled,
+    marginLeft: spacing.sm,
   },
 });

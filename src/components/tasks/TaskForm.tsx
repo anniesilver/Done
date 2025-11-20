@@ -1,6 +1,6 @@
 // TaskForm component - Form for creating/editing tasks
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,10 +15,10 @@ import {
 } from 'react-native';
 import { CreateTaskInput, UpdateTaskInput, RecurrenceType } from '../../types/task';
 import { Button } from '../common/Button';
-import { TaskTimeSelector } from './TaskTimeSelector';
-import { TaskReminderSelector } from './TaskReminderSelector';
-import { TaskDurationSelector } from './TaskDurationSelector';
-import { TaskRecurrenceSelector } from './TaskRecurrenceSelector';
+import { TaskTimePicker } from './TaskTimePicker';
+import { TaskDurationPicker } from './TaskDurationPicker';
+import { TaskReminderPicker } from './TaskReminderPicker';
+import { TaskRepeatPicker } from './TaskRepeatPicker';
 import { CategoryPicker } from '../categories/CategoryPicker';
 import { useCategoryStore } from '../../stores/categoryStore';
 import { useTaskStore } from '../../stores/taskStore';
@@ -29,25 +29,27 @@ import { format } from 'date-fns';
 interface TaskFormProps {
   initialValues?: Partial<CreateTaskInput>;
   onSubmit: (input: CreateTaskInput | UpdateTaskInput) => void;
-  onCancel: () => void;
+  onClose: () => void;
   isLoading?: boolean;
-  submitLabel?: string;
+  isCreateMode?: boolean;
   taskId?: number | string; // For overlap validation when editing
+  onSubmitReady?: (submitFn: () => void) => void; // Callback to expose submit function
 }
 
 export const TaskForm: React.FC<TaskFormProps> = ({
   initialValues,
   onSubmit,
-  onCancel,
+  onClose,
   isLoading = false,
-  submitLabel = 'Create Task',
+  isCreateMode = true,
   taskId,
+  onSubmitReady,
 }) => {
   const categories = useCategoryStore((state) => state.categories);
   const getTodayTasks = useTaskStore((state) => state.getTodayTasks);
 
   const [text, setText] = useState(initialValues?.text || '');
-  const [dueDate, setDueDate] = useState<Date | null>(initialValues?.dueDate || null);
+  const [dueDate, setDueDate] = useState<Date | null>(initialValues?.dueDate || new Date());
   const [reminderTime, setReminderTime] = useState<Date | null>(
     initialValues?.reminderTime || null
   );
@@ -57,7 +59,8 @@ export const TaskForm: React.FC<TaskFormProps> = ({
   const [categoryId, setCategoryId] = useState<number | null>(
     initialValues?.categoryId || null
   );
-  const [duration, setDuration] = useState(initialValues?.duration || 15);
+  const [duration, setDuration] = useState(initialValues?.duration ?? 15);
+  const [showValidation, setShowValidation] = useState(false);
 
   // Helper to convert reminderTime to reminder setting strings
   const getReminderSettingsFromTime = (reminderTime: Date | null, dueDate: Date | null): string[] => {
@@ -93,8 +96,17 @@ export const TaskForm: React.FC<TaskFormProps> = ({
     getRepeatSettingFromRecurrence(initialValues?.recurrence || 'none')
   );
 
+  // Expose submit function to parent via callback
+  useEffect(() => {
+    if (onSubmitReady) {
+      onSubmitReady(() => handleSubmit);
+    }
+  }, [text, dueDate, categoryId, duration, reminderSettings, repeatSetting]);
+
   const handleSubmit = () => {
-    if (!text.trim()) {
+    // Validate required fields
+    if (!text.trim() || !dueDate || categoryId === null) {
+      setShowValidation(true);
       return;
     }
 
@@ -157,6 +169,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
     };
 
     onSubmit(input);
+    onClose();
   };
 
   return (
@@ -173,100 +186,63 @@ export const TaskForm: React.FC<TaskFormProps> = ({
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View style={styles.form}>
-            {/* Task text input */}
-            <View style={styles.field}>
-              <Text style={styles.label}>Task</Text>
+            {/* Task text input - iOS style */}
+            <View style={styles.section}>
               <TextInput
-                style={styles.input}
+                style={styles.taskInput}
                 value={text}
                 onChangeText={setText}
-                placeholder="What do you need to do?"
+                placeholder="What do you plan"
+                placeholderTextColor={colors.text.disabled}
                 multiline
-                numberOfLines={2}
                 autoFocus
                 returnKeyType="done"
                 blurOnSubmit={true}
               />
             </View>
 
-            {/* Due Date with integrated time/reminder/repeat/duration */}
-            <TaskTimeSelector
-              value={dueDate}
-              onChange={(date) => {
-                Keyboard.dismiss(); // Dismiss keyboard when opening date picker
-                setDueDate(date);
-              }}
-              label="Due Date"
-              onReminderChange={setReminderSettings}
-              onRepeatChange={setRepeatSetting}
-              onDurationChange={setDuration}
-              reminderValue={reminderSettings}
-              repeatValue={repeatSetting}
-              durationValue={duration}
-            />
+            {/* Settings Section - Individual Pickers */}
+            <View style={styles.section}>
+              <TaskTimePicker
+                value={dueDate}
+                onChange={(date) => {
+                  Keyboard.dismiss();
+                  setDueDate(date);
+                  if (showValidation && date) {
+                    setShowValidation(false);
+                  }
+                }}
+                showWarning={showValidation && !dueDate}
+              />
 
-        {/* Display selected settings */}
-        {(reminderSettings.length > 0 || repeatSetting !== 'None' || dueDate || duration > 0) && (
-          <View style={styles.selectedSettings}>
-            {dueDate && (
-              <View style={styles.settingItem}>
-                <Text style={styles.settingLabel}>📅 Due:</Text>
-                <Text style={styles.settingValue}>{format(dueDate, 'MMM d, yyyy h:mm a')}</Text>
-              </View>
-            )}
-            {duration > 0 && (
-              <View style={styles.settingItem}>
-                <Text style={styles.settingLabel}>⏱️ Duration:</Text>
-                <Text style={styles.settingValue}>
-                  {duration < 60 ? `${duration} min` : `${Math.floor(duration / 60)}h ${duration % 60 > 0 ? `${duration % 60}m` : ''}`}
-                </Text>
-              </View>
-            )}
-            {reminderSettings.length > 0 && (
-              <View style={styles.settingItem}>
-                <Text style={styles.settingLabel}>🔔 Reminders:</Text>
-                <Text style={styles.settingValue}>{reminderSettings.join(', ')}</Text>
-              </View>
-            )}
-            {repeatSetting !== 'None' && (
-              <View style={styles.settingItem}>
-                <Text style={styles.settingLabel}>🔁 Repeat:</Text>
-                <Text style={styles.settingValue}>{repeatSetting}</Text>
-              </View>
-            )}
-          </View>
-        )}
+              <TaskDurationPicker
+                value={duration}
+                onChange={setDuration}
+              />
 
-        {/* Category */}
-        <CategoryPicker
-          categories={categories}
-          selectedCategoryId={categoryId}
-          onSelectCategory={setCategoryId}
-          label="Category"
-          allowNone={true}
-        />
+              <TaskReminderPicker
+                value={reminderSettings}
+                onChange={setReminderSettings}
+              />
 
-            {/* Action buttons */}
-            <View style={styles.actions}>
-              <View style={styles.button}>
-                <Button
-                  variant="secondary"
-                  onPress={onCancel}
-                  disabled={isLoading}
-                >
-                  Cancel
-                </Button>
-              </View>
-              <View style={styles.button}>
-                <Button
-                  variant="primary"
-                  onPress={handleSubmit}
-                  disabled={!text.trim() || isLoading}
-                  loading={isLoading}
-                >
-                  {submitLabel}
-                </Button>
-              </View>
+              <TaskRepeatPicker
+                value={repeatSetting}
+                onChange={setRepeatSetting}
+              />
+
+              <CategoryPicker
+                categories={categories}
+                selectedCategoryId={categoryId}
+                onSelectCategory={(id) => {
+                  setCategoryId(id);
+                  if (showValidation && id !== null) {
+                    setShowValidation(false);
+                  }
+                }}
+                label="Category"
+                allowNone={true}
+                showWarning={showValidation && categoryId === null}
+              />
             </View>
           </View>
         </TouchableWithoutFeedback>
@@ -287,57 +263,21 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   form: {
-    padding: spacing.lg,
-    paddingBottom: spacing.xl,
-  },
-  field: {
-    marginBottom: spacing.md,
-  },
-  label: {
-    fontSize: typography.body.fontSize,
-    fontWeight: '600',
-    color: colors.text.primary,
-    marginBottom: spacing.xs,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.surface.medium,
-    borderRadius: 8,
-    padding: spacing.md,
-    fontSize: typography.body.fontSize,
-    color: colors.text.primary,
-    backgroundColor: colors.surface.white,
-    minHeight: 60,
-    textAlignVertical: 'top',
-  },
-  actions: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginTop: spacing.lg,
-    paddingBottom: spacing.xl, // Extra padding to ensure buttons are visible above keyboard
-  },
-  button: {
     flex: 1,
-  },
-  selectedSettings: {
     backgroundColor: colors.surface.light,
-    borderRadius: 8,
-    padding: spacing.md,
-    marginBottom: spacing.md,
-    gap: spacing.xs,
   },
-  settingItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
+  section: {
+    backgroundColor: colors.surface.white,
+    marginTop: spacing.lg,
+    marginBottom: 0,
   },
-  settingLabel: {
-    fontSize: typography.caption.fontSize,
-    color: colors.text.secondary,
+  taskInput: {
+    fontSize: 28,
     fontWeight: '600',
-  },
-  settingValue: {
-    fontSize: typography.caption.fontSize,
     color: colors.text.primary,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
+    minHeight: 100,
+    textAlignVertical: 'top',
   },
 });

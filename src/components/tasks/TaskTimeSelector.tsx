@@ -272,11 +272,6 @@ export const TaskTimeSelector: React.FC<TaskTimeSelectorProps> = ({
             }}
             placeholder="Select time"
           />
-          {value && (
-            <TouchableOpacity style={styles.clearButton} onPress={handleClear}>
-              <Text style={styles.clearButtonText}>Clear</Text>
-            </TouchableOpacity>
-          )}
         </View>
       </View>
     );
@@ -289,22 +284,21 @@ export const TaskTimeSelector: React.FC<TaskTimeSelectorProps> = ({
 
     return (
       <View style={styles.container}>
-        <Text style={styles.label}>{label}</Text>
-
         <TouchableOpacity
-          style={styles.selectButton}
+          style={styles.selectRow}
           onPress={() => setShowDatePicker(true)}
         >
-          <Text style={styles.selectButtonText}>
-            {value ? format(value, 'MMM d, yyyy h:mm a') : 'Select date & time'}
-          </Text>
+          <View style={styles.selectLeft}>
+            <Text style={styles.selectIcon}>📅</Text>
+            <Text style={styles.selectLabel}>{label}</Text>
+          </View>
+          <View style={styles.selectRight}>
+            <Text style={styles.selectValue}>
+              {value ? format(value, 'MMM d, h:mm a') : 'None'}
+            </Text>
+            <Text style={styles.chevron}>▶</Text>
+          </View>
         </TouchableOpacity>
-
-        {value && (
-          <TouchableOpacity style={styles.clearButtonFullWidth} onPress={handleClear}>
-            <Text style={styles.clearButtonText}>Clear</Text>
-          </TouchableOpacity>
-        )}
 
         {/* iOS Modal with Calendar */}
         <Modal
@@ -555,22 +549,14 @@ export const TaskTimeSelector: React.FC<TaskTimeSelectorProps> = ({
     <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>
 
-      <View style={styles.buttonRow}>
-        <TouchableOpacity
-          style={styles.selectButton}
-          onPress={handleShowDatePicker}
-        >
-          <Text style={styles.selectButtonText}>
-            {value ? format(value, 'MMM d, yyyy h:mm a') : 'Select date & time'}
-          </Text>
-        </TouchableOpacity>
-
-        {value && (
-          <TouchableOpacity style={styles.clearButton} onPress={handleClear}>
-            <Text style={styles.clearButtonText}>Clear</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+      <TouchableOpacity
+        style={styles.selectButton}
+        onPress={handleShowDatePicker}
+      >
+        <Text style={styles.selectButtonText}>
+          {value ? format(value, 'MMM d, yyyy h:mm a') : 'Select date & time'}
+        </Text>
+      </TouchableOpacity>
 
       {/* Android: Separate date and time pickers */}
       {showDatePicker && (
@@ -597,34 +583,42 @@ export const TaskTimeSelector: React.FC<TaskTimeSelectorProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.surface.medium,
   },
-  label: {
-    fontSize: typography.body.fontSize,
-    fontWeight: '600',
-    color: colors.text.primary,
-    marginBottom: spacing.xs,
-  },
-  buttonRow: {
+  selectRow: {
     flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.sm + 2,
+    paddingHorizontal: spacing.lg,
+    backgroundColor: colors.surface.white,
+    minHeight: 44,
+  },
+  selectLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.sm,
   },
-  selectButton: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: colors.surface.medium,
-    borderRadius: 8,
-    padding: spacing.md,
-    backgroundColor: colors.surface.white,
+  selectIcon: {
+    fontSize: 18,
   },
-  selectButtonLabel: {
-    fontSize: typography.caption.fontSize,
-    color: colors.text.secondary,
-    marginBottom: spacing.xs,
-  },
-  selectButtonText: {
+  selectLabel: {
     fontSize: typography.body.fontSize,
     color: colors.text.primary,
+  },
+  selectRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  selectValue: {
+    fontSize: typography.body.fontSize,
+    color: colors.text.secondary,
+  },
+  chevron: {
+    fontSize: 12,
+    color: colors.text.disabled,
   },
   webInput: {
     outlineStyle: 'none',
