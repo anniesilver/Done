@@ -1,12 +1,14 @@
-// TasksScreen - All tasks view with category filtering
+// TasksScreen - All tasks view with iOS-native category filtering
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useLayoutEffect } from 'react';
 import { View, StyleSheet, RefreshControl, TouchableOpacity, Text } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import * as Haptics from 'expo-haptics';
+import { useNavigation } from '@react-navigation/native';
 import { TaskList } from '../../components/tasks/TaskList';
-import { CategoryList } from '../../components/categories/CategoryList';
 import { TaskDetailModal } from '../modals/TaskDetailModal';
 import { CategoryModal } from '../modals/CategoryModal';
+import { CategoryFilterModal } from '../../components/categories/CategoryFilterModal';
 import { useTaskStore } from '../../stores/taskStore';
 import { useCategoryStore } from '../../stores/categoryStore';
 import { useUiStore } from '../../stores/uiStore';
@@ -14,9 +16,11 @@ import { colors, spacing } from '../../config/theme';
 import { Task } from '../../types/task';
 
 export const TasksScreen: React.FC = () => {
+  const navigation = useNavigation();
   const [refreshing, setRefreshing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   const tasks = useTaskStore((state) => state.tasks);
@@ -30,6 +34,33 @@ export const TasksScreen: React.FC = () => {
 
   const selectedCategory = useUiStore((state) => state.selectedCategory);
   const setSelectedCategory = useUiStore((state) => state.setSelectedCategory);
+
+  // Get current title based on selected category
+  const getCurrentTitle = () => {
+    if (selectedCategory === null) {
+      return 'All Tasks';
+    }
+    const category = categories.find(c => c.id === selectedCategory);
+    return category?.name || 'All Tasks';
+  };
+
+  // Show category filter modal
+  const showCategoryFilter = () => {
+    Haptics.selectionAsync();
+    setFilterModalVisible(true);
+  };
+
+  // Setup navigation header with dynamic title and filter button
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerTitle: getCurrentTitle(),
+      headerRight: () => (
+        <TouchableOpacity onPress={showCategoryFilter} style={styles.headerButton}>
+          <Icon name="dots-vertical" size={24} color={colors.text.primary} />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation, selectedCategory, categories]);
 
   // Initial data fetch
   useEffect(() => {
@@ -79,15 +110,6 @@ export const TasksScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* Category filter */}
-      <CategoryList
-        categories={categories}
-        selectedCategoryId={selectedCategory}
-        onSelectCategory={setSelectedCategory}
-        showAllOption={true}
-        onManageCategories={() => setCategoryModalVisible(true)}
-      />
-
       {/* Tasks list */}
       <TaskList
         tasks={sortedTasks}
@@ -106,10 +128,20 @@ export const TasksScreen: React.FC = () => {
         }
       />
 
-      {/* Add task button */}
+      {/* Add task button - FAB */}
       <TouchableOpacity style={styles.fab} onPress={handleCreateTask}>
         <Text style={styles.fabText}>+</Text>
       </TouchableOpacity>
+
+      {/* Category filter modal */}
+      <CategoryFilterModal
+        visible={filterModalVisible}
+        categories={categories}
+        selectedCategoryId={selectedCategory}
+        onSelectCategory={setSelectedCategory}
+        onManageCategories={() => setCategoryModalVisible(true)}
+        onClose={() => setFilterModalVisible(false)}
+      />
 
       {/* Task detail/create modal */}
       <TaskDetailModal
@@ -131,6 +163,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface.white,
+  },
+  headerButton: {
+    padding: spacing.xs,
   },
   fab: {
     position: 'absolute',
