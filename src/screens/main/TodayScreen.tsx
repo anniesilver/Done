@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { TimelineView } from '../../components/calendar/TimelineView';
 import { TaskDetailModal } from '../modals/TaskDetailModal';
 import { useTaskStore } from '../../stores/taskStore';
@@ -69,16 +70,12 @@ export const TodayScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header with title, date/time and progress */}
-      <View style={styles.header}>
-        <Text style={styles.title}>Today</Text>
-        <View style={styles.subtitleRow}>
-          <Text style={styles.date}>{format(currentTime, 'EEEE, MMMM d')}</Text>
-          <Text style={styles.timeSeparator}>•</Text>
-          <Text style={styles.time}>{format(currentTime, 'h:mm:ss a')}</Text>
-        </View>
-
-        {/* Task summary */}
+      {/* Header */}
+      <ScreenHeader
+        title="Today"
+        subtitle={`${format(currentTime, 'EEEE, MMMM d')} • ${format(currentTime, 'h:mm:ss a')}`}
+      >
+        {/* Task progress */}
         <View style={styles.summary}>
           <Text style={styles.summaryText}>
             {completedCount} of {totalCount} tasks completed
@@ -94,7 +91,7 @@ export const TodayScreen: React.FC = () => {
             </View>
           )}
         </View>
-      </View>
+      </ScreenHeader>
 
       {/* Today's tasks timeline */}
       <TimelineView
@@ -125,46 +122,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.surface.white,
   },
-  header: {
-    backgroundColor: colors.primary.main,
-    padding: spacing.lg,
-    paddingTop: spacing.xl + spacing.lg,
-  },
-  title: {
-    fontSize: 34,
-    fontWeight: 'bold',
-    color: colors.surface.white,
-    marginBottom: spacing.xs,
-  },
-  subtitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.md,
-  },
-  date: {
-    fontSize: typography.body.fontSize,
-    color: colors.surface.white,
-    opacity: 0.9,
-  },
-  timeSeparator: {
-    fontSize: typography.body.fontSize,
-    color: colors.surface.white,
-    opacity: 0.6,
-    marginHorizontal: spacing.sm,
-  },
-  time: {
-    fontSize: typography.body.fontSize,
-    color: colors.surface.white,
-    opacity: 0.9,
-  },
   summary: {
-    marginTop: spacing.sm,
+    marginTop: spacing.xs,
   },
   summaryText: {
     fontSize: typography.caption.fontSize,
     color: colors.surface.white,
     opacity: 0.8,
     marginBottom: spacing.xs,
+    textAlign: 'center',
   },
   progressBar: {
     height: 4,

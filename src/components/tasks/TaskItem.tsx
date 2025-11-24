@@ -63,83 +63,80 @@ export const TaskItem: React.FC<TaskItemProps> = ({
     }
   };
 
-  // Right swipe action - Quick complete
+  // Left swipe action (swipe right-to-left) - Delete
   const renderRightActions = (
     progress: Animated.AnimatedInterpolation<number>,
     dragX: Animated.AnimatedInterpolation<number>
   ) => {
-    const trans = dragX.interpolate({
-      inputRange: [0, 100],
-      outputRange: [0, 0],
+    const scale = dragX.interpolate({
+      inputRange: [-80, 0],
+      outputRange: [1, 0],
       extrapolate: 'clamp',
     });
 
     return (
-      <Animated.View
-        style={[
-          styles.rightAction,
-          {
-            transform: [{ translateX: trans }],
-          },
-        ]}
-      >
-        <TouchableOpacity
-          style={styles.completeAction}
-          onPress={handleCheckboxPress}
-        >
-          <Icon name="check" size={24} color={colors.surface.white} />
-          <Text style={styles.actionText}>Complete</Text>
-        </TouchableOpacity>
-      </Animated.View>
+      <View style={styles.deleteActionContainer}>
+        <Animated.View style={[styles.actionContent, { transform: [{ scale }] }]}>
+          <Icon name="delete" size={24} color={colors.surface.white} />
+          <Text style={styles.actionText}>Delete</Text>
+        </Animated.View>
+      </View>
     );
   };
 
-  // Left swipe actions - Edit and Delete
+  // Right swipe action (swipe left-to-right) - Mark Done
   const renderLeftActions = (
     progress: Animated.AnimatedInterpolation<number>,
     dragX: Animated.AnimatedInterpolation<number>
   ) => {
-    const trans = dragX.interpolate({
-      inputRange: [-160, 0],
-      outputRange: [0, 0],
+    const scale = dragX.interpolate({
+      inputRange: [0, 80],
+      outputRange: [0, 1],
       extrapolate: 'clamp',
     });
 
     return (
-      <Animated.View
-        style={[
-          styles.leftActions,
-          {
-            transform: [{ translateX: trans }],
-          },
-        ]}
-      >
-        <TouchableOpacity style={styles.editAction} onPress={handleEdit}>
-          <Icon name="pencil" size={24} color={colors.surface.white} />
-          <Text style={styles.actionText}>Edit</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.deleteAction} onPress={handleDelete}>
-          <Icon name="delete" size={24} color={colors.surface.white} />
-          <Text style={styles.actionText}>Delete</Text>
-        </TouchableOpacity>
-      </Animated.View>
+      <View style={styles.completeActionContainer}>
+        <Animated.View style={[styles.actionContent, { transform: [{ scale }] }]}>
+          <Icon
+            name={task.completed ? "checkbox-blank-outline" : "check-circle"}
+            size={24}
+            color={colors.surface.white}
+          />
+          <Text style={styles.actionText}>
+            {task.completed ? 'Undo' : 'Done'}
+          </Text>
+        </Animated.View>
+      </View>
     );
   };
 
-  const handleSwipeableWillOpen = (direction: 'left' | 'right') => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  // Handle swipe completion
+  const handleSwipeableOpen = (direction: 'left' | 'right') => {
+    if (direction === 'left') {
+      // Swiped left-to-right = Mark Done
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      onToggleComplete(task.id);
+    } else if (direction === 'right') {
+      // Swiped right-to-left = Delete
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      if (onDelete) {
+        onDelete(task.id);
+      }
+    }
+    swipeableRef.current?.close();
   };
 
   return (
     <Swipeable
       ref={swipeableRef}
-      renderRightActions={!task.completed ? renderRightActions : undefined}
+      renderRightActions={renderRightActions}
       renderLeftActions={renderLeftActions}
-      onSwipeableWillOpen={handleSwipeableWillOpen}
+      onSwipeableOpen={handleSwipeableOpen}
       overshootRight={false}
       overshootLeft={false}
-      rightThreshold={40}
-      leftThreshold={40}
+      rightThreshold={80}
+      leftThreshold={80}
       friction={2}
     >
       <TouchableOpacity
@@ -272,43 +269,26 @@ const styles = StyleSheet.create({
     fontSize: typography.caption.fontSize,
     color: colors.text.secondary,
   },
-  rightAction: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-  },
-  completeAction: {
-    backgroundColor: colors.semantic.success,
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: 100,
-    height: '100%',
-    paddingHorizontal: spacing.md,
-  },
-  leftActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  editAction: {
-    backgroundColor: colors.primary.main,
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: 80,
-    height: '100%',
-    paddingHorizontal: spacing.md,
-  },
-  deleteAction: {
+  deleteActionContainer: {
     backgroundColor: colors.semantic.error,
     justifyContent: 'center',
+    alignItems: 'flex-end',
+    paddingHorizontal: spacing.lg,
+  },
+  completeActionContainer: {
+    backgroundColor: colors.semantic.success,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+    paddingHorizontal: spacing.lg,
+  },
+  actionContent: {
     alignItems: 'center',
-    width: 80,
-    height: '100%',
-    paddingHorizontal: spacing.md,
+    justifyContent: 'center',
   },
   actionText: {
     color: colors.surface.white,
-    fontSize: typography.caption.fontSize,
+    fontSize: 11,
     fontWeight: '600',
-    marginTop: spacing.xs,
+    marginTop: 2,
   },
 });

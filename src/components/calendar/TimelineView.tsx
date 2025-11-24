@@ -100,7 +100,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
     ));
   };
 
-  // Render left swipe action (complete)
+  // Render right swipe action (swipe left-to-right) - Mark Done
   const renderLeftActions = (task: Task, progress: Animated.AnimatedInterpolation<number>, dragX: Animated.AnimatedInterpolation<number>) => {
     const scale = dragX.interpolate({
       inputRange: [0, 80],
@@ -124,7 +124,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
     );
   };
 
-  // Render right swipe action (delete)
+  // Render left swipe action (swipe right-to-left) - Delete
   const renderRightActions = (progress: Animated.AnimatedInterpolation<number>, dragX: Animated.AnimatedInterpolation<number>) => {
     const scale = dragX.interpolate({
       inputRange: [-80, 0],
@@ -142,14 +142,14 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
     );
   };
 
-  // Handle swipe complete
-  const handleSwipeLeft = (task: Task) => {
+  // Handle swipe right (left-to-right) - Mark Done
+  const handleSwipeRight = (task: Task) => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     onToggleComplete(task.id);
   };
 
-  // Handle swipe delete
-  const handleSwipeRight = (task: Task) => {
+  // Handle swipe left (right-to-left) - Delete
+  const handleSwipeLeft = (task: Task) => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     onDeleteTask(task.id);
   };
@@ -178,9 +178,11 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
           renderRightActions={renderRightActions}
           onSwipeableOpen={(direction) => {
             if (direction === 'left') {
-              handleSwipeLeft(task);
-            } else if (direction === 'right') {
+              // Swiped left-to-right = Mark Done
               handleSwipeRight(task);
+            } else if (direction === 'right') {
+              // Swiped right-to-left = Delete
+              handleSwipeLeft(task);
             }
           }}
           leftThreshold={80}
@@ -229,7 +231,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
 
             {/* Time info */}
             {task.dueDate && (
-              <Text style={styles.taskTime}>
+              <Text style={[styles.taskTime, isCompleted && styles.taskTimeCompleted]}>
                 {format(new Date(task.dueDate), 'h:mm a')}
                 {task.duration > 0 && ` • ${task.duration} min`}
               </Text>
@@ -368,13 +370,16 @@ const styles = StyleSheet.create({
   },
   taskTextCompleted: {
     textDecorationLine: 'line-through',
-    opacity: 0.7,
+    color: colors.text.secondary,
   },
   taskTime: {
     fontSize: 11,
     color: colors.surface.white,
     opacity: 0.85,
     marginTop: 2,
+  },
+  taskTimeCompleted: {
+    color: colors.text.disabled,
   },
   swipeActionLeft: {
     backgroundColor: colors.semantic.success,

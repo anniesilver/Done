@@ -2,9 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Text } from 'react-native';
-import SegmentedControl from '@react-native-segmented-control/segmented-control';
 import * as Haptics from 'expo-haptics';
-import { CalendarHeader } from '../../components/calendar/CalendarHeader';
+import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { CalendarGrid } from '../../components/calendar/CalendarGrid';
 import { WeeklyView } from '../../components/calendar/WeeklyView';
 import { TaskList } from '../../components/tasks/TaskList';
@@ -13,7 +12,7 @@ import { useTaskStore } from '../../stores/taskStore';
 import { useCategoryStore } from '../../stores/categoryStore';
 import { useUiStore } from '../../stores/uiStore';
 import { colors, spacing, typography } from '../../config/theme';
-import { addMonths, subMonths, addWeeks, subWeeks, isSameDay } from 'date-fns';
+import { format, addMonths, subMonths, addWeeks, subWeeks, isSameDay } from 'date-fns';
 import { Task } from '../../types/task';
 
 export const CalendarScreen: React.FC = () => {
@@ -41,26 +40,15 @@ export const CalendarScreen: React.FC = () => {
     fetchCategories();
   }, []);
 
-  const handlePreviousMonth = () => {
-    if (calendarViewMode === 'weekly') {
-      setCurrentMonth(subWeeks(currentMonth, 1));
-    } else {
-      setCurrentMonth(subMonths(currentMonth, 1));
-    }
+  // Toggle between monthly and weekly view
+  const toggleViewMode = () => {
+    Haptics.selectionAsync();
+    setCalendarViewMode(calendarViewMode === 'monthly' ? 'weekly' : 'monthly');
   };
 
-  const handleNextMonth = () => {
-    if (calendarViewMode === 'weekly') {
-      setCurrentMonth(addWeeks(currentMonth, 1));
-    } else {
-      setCurrentMonth(addMonths(currentMonth, 1));
-    }
-  };
-
-  const handleToday = () => {
-    const today = new Date();
-    setCurrentMonth(today);
-    setSelectedDate(today);
+  // Get view mode icon
+  const getViewModeIcon = () => {
+    return calendarViewMode === 'monthly' ? 'calendar-week' : 'calendar-month';
   };
 
   const handleSelectDate = (date: Date) => {
@@ -96,29 +84,14 @@ export const CalendarScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
+      {/* Header with current date and view toggle */}
+      <ScreenHeader
+        title={format(currentMonth, 'MMMM yyyy')}
+        leftIcon={getViewModeIcon()}
+        onLeftPress={toggleViewMode}
+      />
+
       <ScrollView>
-        {/* Calendar header */}
-        <CalendarHeader
-          currentDate={currentMonth}
-          onPreviousMonth={handlePreviousMonth}
-          onNextMonth={handleNextMonth}
-          onToday={handleToday}
-        />
-
-        {/* View mode toggle - iOS Segmented Control */}
-        <View style={styles.viewToggle}>
-          <SegmentedControl
-            values={['Month', 'Week']}
-            selectedIndex={calendarViewMode === 'monthly' ? 0 : 1}
-            onChange={(event) => {
-              Haptics.selectionAsync();
-              const index = event.nativeEvent.selectedSegmentIndex;
-              setCalendarViewMode(index === 0 ? 'monthly' : 'weekly');
-            }}
-            style={styles.segmentedControl}
-          />
-        </View>
-
         {/* Calendar view */}
         {calendarViewMode === 'monthly' ? (
           <CalendarGrid
@@ -176,15 +149,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface.white,
-  },
-  viewToggle: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surface.light,
-  },
-  segmentedControl: {
-    height: 32,
   },
   tasksSection: {
     padding: spacing.md,

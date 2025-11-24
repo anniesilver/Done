@@ -1,10 +1,9 @@
 // TasksScreen - All tasks view with iOS-native category filtering
 
-import React, { useEffect, useState, useLayoutEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, RefreshControl, TouchableOpacity, Text } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import * as Haptics from 'expo-haptics';
-import { useNavigation } from '@react-navigation/native';
+import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { TaskList } from '../../components/tasks/TaskList';
 import { TaskDetailModal } from '../modals/TaskDetailModal';
 import { CategoryModal } from '../modals/CategoryModal';
@@ -16,7 +15,6 @@ import { colors, spacing } from '../../config/theme';
 import { Task } from '../../types/task';
 
 export const TasksScreen: React.FC = () => {
-  const navigation = useNavigation();
   const [refreshing, setRefreshing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
@@ -49,18 +47,6 @@ export const TasksScreen: React.FC = () => {
     Haptics.selectionAsync();
     setFilterModalVisible(true);
   };
-
-  // Setup navigation header with dynamic title and filter button
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerTitle: getCurrentTitle(),
-      headerRight: () => (
-        <TouchableOpacity onPress={showCategoryFilter} style={styles.headerButton}>
-          <Icon name="dots-vertical" size={24} color={colors.text.primary} />
-        </TouchableOpacity>
-      ),
-    });
-  }, [navigation, selectedCategory, categories]);
 
   // Initial data fetch
   useEffect(() => {
@@ -110,6 +96,13 @@ export const TasksScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
+      {/* Header */}
+      <ScreenHeader
+        title={getCurrentTitle()}
+        rightIcon="dots-vertical"
+        onRightPress={showCategoryFilter}
+      />
+
       {/* Tasks list */}
       <TaskList
         tasks={sortedTasks}
@@ -163,9 +156,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface.white,
-  },
-  headerButton: {
-    padding: spacing.xs,
   },
   fab: {
     position: 'absolute',
