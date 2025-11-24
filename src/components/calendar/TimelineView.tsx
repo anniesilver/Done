@@ -1,8 +1,10 @@
 // TimelineView component - Visual timeline scheduler showing tasks in time slots
 
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Animated } from 'react-native';
+import { Swipeable } from 'react-native-gesture-handler';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import * as Haptics from 'expo-haptics';
 import { Task } from '../../types/task';
 import { Category } from '../../types/category';
 import { colors, spacing, typography } from '../../config/theme';
@@ -17,6 +19,7 @@ interface TimelineViewProps {
 }
 
 const HOUR_HEIGHT = 80; // pixels per hour (1.33px per minute for better visibility)
+const MIN_TASK_HEIGHT = 50; // Minimum height for task blocks to ensure text visibility
 const TIME_COLUMN_WIDTH = 60;
 const { width: screenWidth } = Dimensions.get('window');
 const TASK_COLUMN_WIDTH = screenWidth - TIME_COLUMN_WIDTH - spacing.md * 2;
@@ -60,11 +63,12 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
     return (hours * HOUR_HEIGHT) + (minutes * (HOUR_HEIGHT / 60));
   };
 
-  // Get task height based on duration (proportional to time)
+  // Get task height based on duration (proportional to time) with minimum height
   const getTaskHeight = (duration: number): number => {
     // Calculate height: duration in minutes * (HOUR_HEIGHT / 60 minutes)
-    // 15 min = 20px, 30 min = 40px, 60 min = 80px
-    return (duration * HOUR_HEIGHT) / 60;
+    const calculatedHeight = (duration * HOUR_HEIGHT) / 60;
+    // Ensure minimum height for text visibility
+    return Math.max(calculatedHeight, MIN_TASK_HEIGHT);
   };
 
   // Get category color based on category ID
@@ -96,7 +100,61 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
     ));
   };
 
-  // Render task block
+  // Render left swipe action (complete)
+  const renderLeftActions = (task: Task, progress: Animated.AnimatedInterpolation<number>, dragX: Animated.AnimatedInterpolation<number>) => {
+    const scale = dragX.interpolate({
+      inputRange: [0, 80],
+      outputRange: [0, 1],
+      extrapolate: 'clamp',
+    });
+
+    return (
+      <View style={styles.swipeActionLeft}>
+        <Animated.View style={[styles.swipeActionContent, { transform: [{ scale }] }]}>
+          <Icon
+            name={task.completed ? "checkbox-blank-outline" : "check-circle"}
+            size={24}
+            color={colors.surface.white}
+          />
+          <Text style={styles.swipeActionText}>
+            {task.completed ? 'Undo' : 'Done'}
+          </Text>
+        </Animated.View>
+      </View>
+    );
+  };
+
+  // Render right swipe action (delete)
+  const renderRightActions = (progress: Animated.AnimatedInterpolation<number>, dragX: Animated.AnimatedInterpolation<number>) => {
+    const scale = dragX.interpolate({
+      inputRange: [-80, 0],
+      outputRange: [1, 0],
+      extrapolate: 'clamp',
+    });
+
+    return (
+      <View style={styles.swipeActionRight}>
+        <Animated.View style={[styles.swipeActionContent, { transform: [{ scale }] }]}>
+          <Icon name="delete" size={24} color={colors.surface.white} />
+          <Text style={styles.swipeActionText}>Delete</Text>
+        </Animated.View>
+      </View>
+    );
+  };
+
+  // Handle swipe complete
+  const handleSwipeLeft = (task: Task) => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    onToggleComplete(task.id);
+  };
+
+  // Handle swipe delete
+  const handleSwipeRight = (task: Task) => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    onDeleteTask(task.id);
+  };
+
+  // Render task block with swipe gestures
   const renderTaskBlock = (task: Task) => {
     const position = getTaskPosition(task);
     const height = getTaskHeight(task.duration);
@@ -107,70 +165,77 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
       <View
         key={task.id}
         style={[
-          styles.taskBlock,
+          styles.taskBlockContainer,
           {
             top: position,
             height,
-            backgroundColor: isCompleted
-              ? colors.surface.medium
-              : `${categoryColor}CC`, // 80% opacity
-            opacity: isCompleted ? 0.5 : 1,
             width: TASK_COLUMN_WIDTH,
           },
         ]}
       >
-        {/* Task text */}
-        <Text
-          style={[
-            styles.taskText,
-            isCompleted && styles.taskTextCompleted,
-          ]}
-          numberOfLines={2}
+        <Swipeable
+          renderLeftActions={(progress, dragX) => renderLeftActions(task, progress, dragX)}
+          renderRightActions={renderRightActions}
+          onSwipeableOpen={(direction) => {
+            if (direction === 'left') {
+              handleSwipeLeft(task);
+            } else if (direction === 'right') {
+              handleSwipeRight(task);
+            }
+          }}
+          leftThreshold={80}
+          rightThreshold={80}
+          containerStyle={styles.swipeableContainer}
         >
-          {task.text}
-        </Text>
-
-        {/* Time info */}
-        {task.dueDate && (
-          <Text style={styles.taskTime}>
-            {format(new Date(task.dueDate), 'h:mm a')}
-            {task.duration > 0 && ` • ${task.duration} min`}
-          </Text>
-        )}
-
-        {/* Action icons */}
-        <View style={styles.actionIcons}>
-          {/* Checkmark - toggle completion */}
           <TouchableOpacity
-            onPress={() => onToggleComplete(task.id)}
-            style={styles.iconButton}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            activeOpacity={0.8}
+            onPress={() => {
+              Haptics.selectionAsync();
+              onEditTask(task);
+            }}
+            style={[
+              styles.taskBlock,
+              {
+                height: '100%',
+                backgroundColor: isCompleted
+                  ? colors.surface.medium
+                  : `${categoryColor}CC`, // 80% opacity
+                opacity: isCompleted ? 0.6 : 1,
+              },
+            ]}
           >
-            <Icon
-              name={isCompleted ? "checkbox-marked" : "checkbox-blank-outline"}
-              size={16}
-              color={isCompleted ? colors.semantic.success : colors.surface.white}
-            />
-          </TouchableOpacity>
+            {/* Task content */}
+            <View style={styles.taskContent}>
+              {/* Completion indicator */}
+              {isCompleted && (
+                <Icon
+                  name="check-circle"
+                  size={16}
+                  color={colors.semantic.success}
+                  style={styles.completedIcon}
+                />
+              )}
+              {/* Task text */}
+              <Text
+                style={[
+                  styles.taskText,
+                  isCompleted && styles.taskTextCompleted,
+                ]}
+                numberOfLines={2}
+              >
+                {task.text}
+              </Text>
+            </View>
 
-          {/* Edit */}
-          <TouchableOpacity
-            onPress={() => onEditTask(task)}
-            style={styles.iconButton}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <Icon name="pencil" size={16} color={colors.surface.white} />
+            {/* Time info */}
+            {task.dueDate && (
+              <Text style={styles.taskTime}>
+                {format(new Date(task.dueDate), 'h:mm a')}
+                {task.duration > 0 && ` • ${task.duration} min`}
+              </Text>
+            )}
           </TouchableOpacity>
-
-          {/* Delete */}
-          <TouchableOpacity
-            onPress={() => onDeleteTask(task.id)}
-            style={styles.iconButton}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <Icon name="delete" size={16} color={colors.surface.white} />
-          </TouchableOpacity>
-        </View>
+        </Swipeable>
       </View>
     );
   };
@@ -271,27 +336,35 @@ const styles = StyleSheet.create({
     position: 'relative',
     paddingHorizontal: spacing.sm,
   },
-  taskBlock: {
+  taskBlockContainer: {
     position: 'absolute',
     left: spacing.sm,
     right: spacing.sm,
-    borderRadius: 6,
-    padding: spacing.xs,
-    paddingTop: 4,
-    paddingBottom: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-    justifyContent: 'space-between',
+  },
+  swipeableContainer: {
+    flex: 1,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  taskBlock: {
+    borderRadius: 8,
+    padding: spacing.sm,
+    paddingVertical: spacing.xs + 2,
+    justifyContent: 'center',
+  },
+  taskContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  completedIcon: {
+    marginRight: spacing.xs,
   },
   taskText: {
-    fontSize: 13,
+    fontSize: 14,
     color: colors.surface.white,
     fontWeight: '600',
-    marginBottom: 2,
-    lineHeight: 16,
+    lineHeight: 18,
+    flex: 1,
   },
   taskTextCompleted: {
     textDecorationLine: 'line-through',
@@ -300,22 +373,34 @@ const styles = StyleSheet.create({
   taskTime: {
     fontSize: 11,
     color: colors.surface.white,
-    opacity: 0.9,
-    marginBottom: 2,
-  },
-  actionIcons: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 4,
+    opacity: 0.85,
     marginTop: 2,
   },
-  iconButton: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+  swipeActionLeft: {
+    backgroundColor: colors.semantic.success,
     justifyContent: 'center',
+    alignItems: 'flex-start',
+    paddingHorizontal: spacing.lg,
+    borderTopLeftRadius: 8,
+    borderBottomLeftRadius: 8,
+  },
+  swipeActionRight: {
+    backgroundColor: colors.semantic.error,
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    paddingHorizontal: spacing.lg,
+    borderTopRightRadius: 8,
+    borderBottomRightRadius: 8,
+  },
+  swipeActionContent: {
     alignItems: 'center',
+    justifyContent: 'center',
+  },
+  swipeActionText: {
+    color: colors.surface.white,
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: 2,
   },
   currentTimeIndicator: {
     position: 'absolute',

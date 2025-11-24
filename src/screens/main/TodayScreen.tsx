@@ -1,7 +1,7 @@
 // TodayScreen - Main screen showing today's tasks with live clock
 
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { TimelineView } from '../../components/calendar/TimelineView';
 import { TaskDetailModal } from '../modals/TaskDetailModal';
@@ -69,20 +69,12 @@ export const TodayScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header with logo and live clock */}
+      {/* Header with title, date/time and progress */}
       <View style={styles.header}>
-        {/* Logo */}
-        <View style={styles.logoContainer}>
-          <Image
-            source={require('../../../assets/images/icon.png')}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-          <Text style={styles.appName}>Done</Text>
-        </View>
-
-        <View style={styles.dateSection}>
+        <Text style={styles.title}>Today</Text>
+        <View style={styles.subtitleRow}>
           <Text style={styles.date}>{format(currentTime, 'EEEE, MMMM d')}</Text>
+          <Text style={styles.timeSeparator}>•</Text>
           <Text style={styles.time}>{format(currentTime, 'h:mm:ss a')}</Text>
         </View>
 
@@ -136,56 +128,54 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: colors.primary.main,
     padding: spacing.lg,
-    paddingTop: spacing.xl,
+    paddingTop: spacing.xl + spacing.lg,
   },
-  logoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.lg,
-  },
-  logo: {
-    width: 48,
-    height: 48,
-    marginRight: spacing.md,
-  },
-  appName: {
-    fontSize: typography.h1.fontSize,
-    fontWeight: 'bold',
-    color: colors.surface.white,
-    letterSpacing: 1,
-  },
-  dateSection: {
-    marginBottom: spacing.md,
-  },
-  date: {
-    fontSize: typography.h2.fontSize,
+  title: {
+    fontSize: 34,
     fontWeight: 'bold',
     color: colors.surface.white,
     marginBottom: spacing.xs,
   },
+  subtitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  date: {
+    fontSize: typography.body.fontSize,
+    color: colors.surface.white,
+    opacity: 0.9,
+  },
+  timeSeparator: {
+    fontSize: typography.body.fontSize,
+    color: colors.surface.white,
+    opacity: 0.6,
+    marginHorizontal: spacing.sm,
+  },
   time: {
-    fontSize: typography.h3.fontSize,
+    fontSize: typography.body.fontSize,
     color: colors.surface.white,
     opacity: 0.9,
   },
   summary: {
-    marginTop: spacing.md,
+    marginTop: spacing.sm,
   },
   summaryText: {
-    fontSize: typography.body.fontSize,
+    fontSize: typography.caption.fontSize,
     color: colors.surface.white,
-    marginBottom: spacing.sm,
+    opacity: 0.8,
+    marginBottom: spacing.xs,
   },
   progressBar: {
-    height: 6,
+    height: 4,
     backgroundColor: colors.primary.dark,
-    borderRadius: 3,
+    borderRadius: 2,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
     backgroundColor: colors.surface.white,
-    borderRadius: 3,
+    borderRadius: 2,
   },
   fab: {
     position: 'absolute',
