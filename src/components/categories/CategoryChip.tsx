@@ -1,7 +1,7 @@
-// CategoryChip component - Small chip to display category with icon
+// CategoryChip component - Small chip to display category with colored dot (iOS style)
 
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, View } from 'react-native';
 import { Category } from '../../types/category';
 import { colors, spacing, typography } from '../../config/theme';
 
@@ -16,6 +16,13 @@ export const CategoryChip: React.FC<CategoryChipProps> = ({
   onPress,
   selected = false,
 }) => {
+  // Get category color from the color array based on category ID
+  const getCategoryColor = () => {
+    if (!category.id) return colors.categories[0];
+    const colorIndex = (category.id - 1) % colors.categories.length;
+    return colors.categories[colorIndex];
+  };
+
   return (
     <TouchableOpacity
       style={[
@@ -26,7 +33,13 @@ export const CategoryChip: React.FC<CategoryChipProps> = ({
       disabled={!onPress}
       activeOpacity={0.7}
     >
-      <Text style={styles.icon}>{category.icon}</Text>
+      {/* Colored dot instead of emoji */}
+      <View
+        style={[
+          styles.dot,
+          { backgroundColor: getCategoryColor() }
+        ]}
+      />
       <Text
         style={[
           styles.name,
@@ -52,18 +65,20 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   chipSelected: {
-    backgroundColor: colors.primary.light,
-    borderColor: colors.primary.main,
+    backgroundColor: colors.surface.light,
+    borderColor: colors.surface.medium,
   },
-  icon: {
-    fontSize: 16,
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   name: {
     fontSize: typography.caption.fontSize,
     color: colors.text.primary,
+    fontWeight: '500',
   },
   nameSelected: {
-    color: colors.primary.dark,
     fontWeight: '600',
   },
 });

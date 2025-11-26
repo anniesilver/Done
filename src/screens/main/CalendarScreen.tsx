@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Text } from 'react-native';
-import { CalendarHeader } from '../../components/calendar/CalendarHeader';
+import * as Haptics from 'expo-haptics';
+import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { CalendarGrid } from '../../components/calendar/CalendarGrid';
 import { WeeklyView } from '../../components/calendar/WeeklyView';
 import { TaskList } from '../../components/tasks/TaskList';
@@ -11,7 +12,7 @@ import { useTaskStore } from '../../stores/taskStore';
 import { useCategoryStore } from '../../stores/categoryStore';
 import { useUiStore } from '../../stores/uiStore';
 import { colors, spacing, typography } from '../../config/theme';
-import { addMonths, subMonths, addWeeks, subWeeks, isSameDay } from 'date-fns';
+import { format, addMonths, subMonths, addWeeks, subWeeks, isSameDay } from 'date-fns';
 import { Task } from '../../types/task';
 
 export const CalendarScreen: React.FC = () => {
@@ -22,6 +23,7 @@ export const CalendarScreen: React.FC = () => {
   const tasks = useTaskStore((state) => state.tasks);
   const fetchTasks = useTaskStore((state) => state.fetchTasks);
   const toggleComplete = useTaskStore((state) => state.toggleComplete);
+  const deleteTask = useTaskStore((state) => state.deleteTask);
   const getTasksForDate = useTaskStore((state) => state.getTasksForDate);
 
   const categories = useCategoryStore((state) => state.categories);
@@ -38,26 +40,15 @@ export const CalendarScreen: React.FC = () => {
     fetchCategories();
   }, []);
 
-  const handlePreviousMonth = () => {
-    if (calendarViewMode === 'weekly') {
-      setCurrentMonth(subWeeks(currentMonth, 1));
-    } else {
-      setCurrentMonth(subMonths(currentMonth, 1));
-    }
+  // Toggle between monthly and weekly view
+  const toggleViewMode = () => {
+    Haptics.selectionAsync();
+    setCalendarViewMode(calendarViewMode === 'monthly' ? 'weekly' : 'monthly');
   };
 
-  const handleNextMonth = () => {
-    if (calendarViewMode === 'weekly') {
-      setCurrentMonth(addWeeks(currentMonth, 1));
-    } else {
-      setCurrentMonth(addMonths(currentMonth, 1));
-    }
-  };
-
-  const handleToday = () => {
-    const today = new Date();
-    setCurrentMonth(today);
-    setSelectedDate(today);
+  // Get view mode icon
+  const getViewModeIcon = () => {
+    return calendarViewMode === 'monthly' ? 'calendar-week' : 'calendar-month';
   };
 
   const handleSelectDate = (date: Date) => {
@@ -74,6 +65,7 @@ export const CalendarScreen: React.FC = () => {
   };
 
   const handleCreateTask = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setSelectedTask(null);
     setModalVisible(true);
   };
@@ -92,52 +84,14 @@ export const CalendarScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
+      {/* Header with current date and view toggle */}
+      <ScreenHeader
+        title={format(currentMonth, 'MMMM yyyy')}
+        leftIcon={getViewModeIcon()}
+        onLeftPress={toggleViewMode}
+      />
+
       <ScrollView>
-        {/* Calendar header */}
-        <CalendarHeader
-          currentDate={currentMonth}
-          onPreviousMonth={handlePreviousMonth}
-          onNextMonth={handleNextMonth}
-          onToday={handleToday}
-        />
-
-        {/* View mode toggle */}
-        <View style={styles.viewToggle}>
-          <TouchableOpacity
-            style={[
-              styles.toggleButton,
-              calendarViewMode === 'monthly' && styles.toggleButtonActive,
-            ]}
-            onPress={() => setCalendarViewMode('monthly')}
-          >
-            <Text
-              style={[
-                styles.toggleText,
-                calendarViewMode === 'monthly' && styles.toggleTextActive,
-              ]}
-            >
-              Month
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.toggleButton,
-              calendarViewMode === 'weekly' && styles.toggleButtonActive,
-            ]}
-            onPress={() => setCalendarViewMode('weekly')}
-          >
-            <Text
-              style={[
-                styles.toggleText,
-                calendarViewMode === 'weekly' && styles.toggleTextActive,
-              ]}
-            >
-              Week
-            </Text>
-          </TouchableOpacity>
-        </View>
-
         {/* Calendar view */}
         {calendarViewMode === 'monthly' ? (
           <CalendarGrid
@@ -167,6 +121,7 @@ export const CalendarScreen: React.FC = () => {
               tasks={selectedDateTasks}
               onToggleComplete={toggleComplete}
               onTaskPress={handleTaskPress}
+              onDeleteTask={deleteTask}
               showCategory={true}
               getCategoryName={getCategoryName}
               emptyMessage="No tasks for this date"
@@ -194,34 +149,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface.white,
-  },
-  viewToggle: {
-    flexDirection: 'row',
-    padding: spacing.md,
-    gap: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surface.light,
-  },
-  toggleButton: {
-    flex: 1,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.surface.medium,
-    alignItems: 'center',
-  },
-  toggleButtonActive: {
-    backgroundColor: colors.primary.main,
-    borderColor: colors.primary.main,
-  },
-  toggleText: {
-    fontSize: typography.body.fontSize,
-    color: colors.text.primary,
-    fontWeight: '600',
-  },
-  toggleTextActive: {
-    color: colors.surface.white,
   },
   tasksSection: {
     padding: spacing.md,

@@ -1,7 +1,10 @@
-// TaskItem component - Individual task display with checkbox, text, and actions
+// TaskItem component - Individual task display with checkbox, text, and swipe actions
 
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import { Swipeable } from 'react-native-gesture-handler';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import * as Haptics from 'expo-haptics';
 import { Task } from '../../types/task';
 import { colors, spacing, typography } from '../../config/theme';
 import { format } from 'date-fns';
@@ -10,6 +13,7 @@ interface TaskItemProps {
   task: Task;
   onToggleComplete: (id: number | string) => void;
   onPress?: () => void;
+  onDelete?: (id: number | string) => void;
   showCategory?: boolean;
   categoryName?: string;
 }
@@ -18,69 +22,176 @@ export const TaskItem: React.FC<TaskItemProps> = ({
   task,
   onToggleComplete,
   onPress,
+  onDelete,
   showCategory = false,
   categoryName,
 }) => {
+  const swipeableRef = React.useRef<Swipeable>(null);
+
+  // Get category color based on category ID
+  const getCategoryColor = () => {
+    if (!task.categoryId) return colors.categories[0];
+    const colorIndex = (task.categoryId - 1) % colors.categories.length;
+    return colors.categories[colorIndex];
+  };
+
   const handleCheckboxPress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onToggleComplete(task.id);
   };
 
   const handlePress = () => {
     if (onPress) {
+      Haptics.selectionAsync();
       onPress();
     }
   };
 
+  const handleDelete = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    swipeableRef.current?.close();
+    if (onDelete) {
+      onDelete(task.id);
+    }
+  };
+
+  const handleEdit = () => {
+    Haptics.selectionAsync();
+    swipeableRef.current?.close();
+    if (onPress) {
+      onPress();
+    }
+  };
+
+  // Left swipe action (swipe right-to-left) - Delete
+  const renderRightActions = (
+    progress: Animated.AnimatedInterpolation<number>,
+    dragX: Animated.AnimatedInterpolation<number>
+  ) => {
+    const scale = dragX.interpolate({
+      inputRange: [-80, 0],
+      outputRange: [1, 0],
+      extrapolate: 'clamp',
+    });
+
+    return (
+      <View style={styles.deleteActionContainer}>
+        <Animated.View style={[styles.actionContent, { transform: [{ scale }] }]}>
+          <Icon name="delete" size={24} color={colors.surface.white} />
+          <Text style={styles.actionText}>Delete</Text>
+        </Animated.View>
+      </View>
+    );
+  };
+
+  // Right swipe action (swipe left-to-right) - Mark Done
+  const renderLeftActions = (
+    progress: Animated.AnimatedInterpolation<number>,
+    dragX: Animated.AnimatedInterpolation<number>
+  ) => {
+    const scale = dragX.interpolate({
+      inputRange: [0, 80],
+      outputRange: [0, 1],
+      extrapolate: 'clamp',
+    });
+
+    return (
+      <View style={styles.completeActionContainer}>
+        <Animated.View style={[styles.actionContent, { transform: [{ scale }] }]}>
+          <Icon
+            name={task.completed ? "checkbox-blank-outline" : "check-circle"}
+            size={24}
+            color={colors.surface.white}
+          />
+          <Text style={styles.actionText}>
+            {task.completed ? 'Undo' : 'Done'}
+          </Text>
+        </Animated.View>
+      </View>
+    );
+  };
+
+  // Handle swipe completion
+  const handleSwipeableOpen = (direction: 'left' | 'right') => {
+    if (direction === 'left') {
+      // Swiped left-to-right = Mark Done
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      onToggleComplete(task.id);
+    } else if (direction === 'right') {
+      // Swiped right-to-left = Delete
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      if (onDelete) {
+        onDelete(task.id);
+      }
+    }
+    swipeableRef.current?.close();
+  };
+
   return (
-    <TouchableOpacity
-      style={styles.container}
-      onPress={handlePress}
-      activeOpacity={0.7}
+    <Swipeable
+      ref={swipeableRef}
+      renderRightActions={renderRightActions}
+      renderLeftActions={renderLeftActions}
+      onSwipeableOpen={handleSwipeableOpen}
+      overshootRight={false}
+      overshootLeft={false}
+      rightThreshold={80}
+      leftThreshold={80}
+      friction={2}
     >
-      {/* Checkbox */}
       <TouchableOpacity
-        style={[styles.checkbox, task.completed && styles.checkboxCompleted]}
-        onPress={handleCheckboxPress}
+        style={[styles.container, { backgroundColor: colors.surface.white }]}
+        onPress={handlePress}
         activeOpacity={0.7}
       >
-        {task.completed && <Text style={styles.checkmark}>✓</Text>}
-      </TouchableOpacity>
-
-      {/* Task content */}
-      <View style={styles.content}>
-        <Text
-          style={[
-            styles.taskText,
-            task.completed && styles.taskTextCompleted,
-          ]}
+        {/* Checkbox */}
+        <TouchableOpacity
+          style={[styles.checkbox, task.completed && styles.checkboxCompleted]}
+          onPress={handleCheckboxPress}
+          activeOpacity={0.7}
         >
-          {task.text}
-        </Text>
+          {task.completed && <Text style={styles.checkmark}>✓</Text>}
+        </TouchableOpacity>
 
-        {/* Metadata row */}
-        <View style={styles.metadata}>
-          {showCategory && categoryName && (
-            <Text style={styles.categoryText}>{categoryName}</Text>
-          )}
+        {/* Task content */}
+        <View style={styles.content}>
+          <Text
+            style={[
+              styles.taskText,
+              task.completed && styles.taskTextCompleted,
+            ]}
+          >
+            {task.text}
+          </Text>
 
-          {task.dueDate && (
-            <Text style={styles.dueDateText}>
-              {format(new Date(task.dueDate), 'MMM d, yyyy')}
-            </Text>
-          )}
+          {/* Metadata row */}
+          <View style={styles.metadata}>
+            {showCategory && categoryName && (
+              <View style={styles.categoryContainer}>
+                <View style={[styles.categoryDot, { backgroundColor: getCategoryColor() }]} />
+                <Text style={styles.categoryText}>{categoryName}</Text>
+              </View>
+            )}
 
-          {task.duration > 0 && (
-            <Text style={styles.durationText}>{task.duration} min</Text>
-          )}
+            {task.dueDate && (
+              <Text style={styles.dueDateText}>
+                {format(new Date(task.dueDate), 'MMM d, yyyy')}
+              </Text>
+            )}
 
-          {task.recurrence !== 'none' && (
-            <Text style={styles.recurrenceText}>
-              🔁 {task.recurrence}
-            </Text>
-          )}
+            {task.duration > 0 && (
+              <Text style={styles.durationText}>{task.duration} min</Text>
+            )}
+
+            {task.recurrence !== 'none' && (
+              <Text style={styles.recurrenceText}>
+                ↻ {task.recurrence}
+              </Text>
+            )}
+          </View>
         </View>
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+    </Swipeable>
   );
 };
 
@@ -129,11 +240,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
+    alignItems: 'center',
+  },
+  categoryContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  categoryDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   categoryText: {
     fontSize: typography.caption.fontSize,
-    color: colors.primary.main,
-    fontWeight: '600',
+    color: colors.text.secondary,
+    fontWeight: '500',
   },
   dueDateText: {
     fontSize: typography.caption.fontSize,
@@ -146,5 +268,27 @@ const styles = StyleSheet.create({
   recurrenceText: {
     fontSize: typography.caption.fontSize,
     color: colors.text.secondary,
+  },
+  deleteActionContainer: {
+    backgroundColor: colors.semantic.error,
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    paddingHorizontal: spacing.lg,
+  },
+  completeActionContainer: {
+    backgroundColor: colors.semantic.success,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+    paddingHorizontal: spacing.lg,
+  },
+  actionContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionText: {
+    color: colors.surface.white,
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: 2,
   },
 });

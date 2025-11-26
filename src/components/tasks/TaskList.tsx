@@ -10,6 +10,7 @@ interface TaskListProps {
   tasks: Task[];
   onToggleComplete: (id: number | string) => void;
   onTaskPress?: (task: Task) => void;
+  onDeleteTask?: (id: number | string) => void;
   showCategory?: boolean;
   getCategoryName?: (categoryId: number | null) => string | undefined;
   emptyMessage?: string;
@@ -20,6 +21,7 @@ export const TaskList: React.FC<TaskListProps> = ({
   tasks,
   onToggleComplete,
   onTaskPress,
+  onDeleteTask,
   showCategory = false,
   getCategoryName,
   emptyMessage = 'No tasks yet',
@@ -46,6 +48,7 @@ export const TaskList: React.FC<TaskListProps> = ({
           task={task}
           onToggleComplete={onToggleComplete}
           onPress={onTaskPress ? () => onTaskPress(task) : undefined}
+          onDelete={onDeleteTask}
           showCategory={showCategory}
           categoryName={getCategoryName ? getCategoryName(task.categoryId) : undefined}
         />

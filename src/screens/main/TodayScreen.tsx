@@ -1,8 +1,10 @@
 // TodayScreen - Main screen showing today's tasks with live clock
 
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, RefreshControl, Image } from 'react-native';
-import { TaskList } from '../../components/tasks/TaskList';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import { ScreenHeader } from '../../components/common/ScreenHeader';
+import { TimelineView } from '../../components/calendar/TimelineView';
 import { TaskDetailModal } from '../modals/TaskDetailModal';
 import { useTaskStore } from '../../stores/taskStore';
 import { useCategoryStore } from '../../stores/categoryStore';
@@ -12,13 +14,11 @@ import { Task } from '../../types/task';
 
 export const TodayScreen: React.FC = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [refreshing, setRefreshing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
-  const tasks = useTaskStore((state) => state.tasks);
-  const isLoading = useTaskStore((state) => state.isLoading);
   const fetchTasks = useTaskStore((state) => state.fetchTasks);
+  const deleteTask = useTaskStore((state) => state.deleteTask);
   const toggleComplete = useTaskStore((state) => state.toggleComplete);
   const getTodayTasks = useTaskStore((state) => state.getTodayTasks);
 
@@ -40,25 +40,23 @@ export const TodayScreen: React.FC = () => {
     fetchCategories();
   }, []);
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await Promise.all([fetchTasks(), fetchCategories()]);
-    setRefreshing(false);
-  };
-
-  const getCategoryName = (categoryId: number | null): string | undefined => {
-    if (!categoryId) return undefined;
-    return categories.find((c) => c.id === categoryId)?.name;
-  };
-
   const handleCreateTask = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setSelectedTask(null);
     setModalVisible(true);
   };
 
-  const handleTaskPress = (task: Task) => {
+  const handleEditTask = (task: Task) => {
     setSelectedTask(task);
     setModalVisible(true);
+  };
+
+  const handleToggleComplete = async (taskId: number | string) => {
+    await toggleComplete(taskId);
+  };
+
+  const handleDeleteTask = async (taskId: number | string) => {
+    await deleteTask(taskId);
   };
 
   const handleCloseModal = () => {
@@ -72,24 +70,12 @@ export const TodayScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header with logo and live clock */}
-      <View style={styles.header}>
-        {/* Logo */}
-        <View style={styles.logoContainer}>
-          <Image
-            source={require('../../../assets/images/icon.png')}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-          <Text style={styles.appName}>Done</Text>
-        </View>
-
-        <View style={styles.dateSection}>
-          <Text style={styles.date}>{format(currentTime, 'EEEE, MMMM d')}</Text>
-          <Text style={styles.time}>{format(currentTime, 'h:mm:ss a')}</Text>
-        </View>
-
-        {/* Task summary */}
+      {/* Header */}
+      <ScreenHeader
+        title="Today"
+        subtitle={`${format(currentTime, 'EEEE, MMMM d')} • ${format(currentTime, 'h:mm:ss a')}`}
+      >
+        {/* Task progress */}
         <View style={styles.summary}>
           <Text style={styles.summaryText}>
             {completedCount} of {totalCount} tasks completed
@@ -105,19 +91,15 @@ export const TodayScreen: React.FC = () => {
             </View>
           )}
         </View>
-      </View>
+      </ScreenHeader>
 
-      {/* Today's tasks list */}
-      <TaskList
+      {/* Today's tasks timeline */}
+      <TimelineView
         tasks={todayTasks}
-        onToggleComplete={toggleComplete}
-        onTaskPress={handleTaskPress}
-        showCategory={true}
-        getCategoryName={getCategoryName}
-        emptyMessage="No tasks for today. Add one to get started!"
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
+        categories={categories}
+        onToggleComplete={handleToggleComplete}
+        onEditTask={handleEditTask}
+        onDeleteTask={handleDeleteTask}
       />
 
       {/* Add task button */}
@@ -140,59 +122,26 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.surface.white,
   },
-  header: {
-    backgroundColor: colors.primary.main,
-    padding: spacing.lg,
-    paddingTop: spacing.xl,
-  },
-  logoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.lg,
-  },
-  logo: {
-    width: 48,
-    height: 48,
-    marginRight: spacing.md,
-  },
-  appName: {
-    fontSize: typography.h1.fontSize,
-    fontWeight: 'bold',
-    color: colors.surface.white,
-    letterSpacing: 1,
-  },
-  dateSection: {
-    marginBottom: spacing.md,
-  },
-  date: {
-    fontSize: typography.h2.fontSize,
-    fontWeight: 'bold',
-    color: colors.surface.white,
-    marginBottom: spacing.xs,
-  },
-  time: {
-    fontSize: typography.h3.fontSize,
-    color: colors.surface.white,
-    opacity: 0.9,
-  },
   summary: {
-    marginTop: spacing.md,
+    marginTop: spacing.xs,
   },
   summaryText: {
-    fontSize: typography.body.fontSize,
+    fontSize: typography.caption.fontSize,
     color: colors.surface.white,
-    marginBottom: spacing.sm,
+    opacity: 0.8,
+    marginBottom: spacing.xs,
+    textAlign: 'center',
   },
   progressBar: {
-    height: 6,
+    height: 4,
     backgroundColor: colors.primary.dark,
-    borderRadius: 3,
+    borderRadius: 2,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
     backgroundColor: colors.surface.white,
-    borderRadius: 3,
+    borderRadius: 2,
   },
   fab: {
     position: 'absolute',

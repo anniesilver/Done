@@ -91,8 +91,8 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
               <Text
                 style={[
                   styles.dayNumber,
+                  isCurrentDay && !isSelected && styles.dayNumberToday,
                   isSelected && styles.dayNumberSelected,
-                  isCurrentDay && styles.dayNumberToday,
                 ]}
               >
                 {format(date, 'd')}

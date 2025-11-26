@@ -37,7 +37,7 @@ export const MainNavigator: React.FC = () => {
         component={TodayScreen}
         options={{
           tabBarLabel: 'Today',
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 24 }}>📅</Text>,
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 24 }}>☀️</Text>,
           headerShown: false, // TodayScreen has its own custom header
         }}
       />
@@ -48,7 +48,7 @@ export const MainNavigator: React.FC = () => {
         options={{
           tabBarLabel: 'Tasks',
           tabBarIcon: ({ color }) => <Text style={{ fontSize: 24 }}>✓</Text>,
-          headerTitle: 'All Tasks',
+          headerShown: false, // TasksScreen has its own custom header
         }}
       />
 

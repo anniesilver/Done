@@ -1,11 +1,13 @@
-// TasksScreen - All tasks view with category filtering
+// TasksScreen - All tasks view with iOS-native category filtering
 
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, RefreshControl, TouchableOpacity, Text } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { TaskList } from '../../components/tasks/TaskList';
-import { CategoryList } from '../../components/categories/CategoryList';
 import { TaskDetailModal } from '../modals/TaskDetailModal';
 import { CategoryModal } from '../modals/CategoryModal';
+import { CategoryFilterModal } from '../../components/categories/CategoryFilterModal';
 import { useTaskStore } from '../../stores/taskStore';
 import { useCategoryStore } from '../../stores/categoryStore';
 import { useUiStore } from '../../stores/uiStore';
@@ -16,11 +18,13 @@ export const TasksScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   const tasks = useTaskStore((state) => state.tasks);
   const fetchTasks = useTaskStore((state) => state.fetchTasks);
   const toggleComplete = useTaskStore((state) => state.toggleComplete);
+  const deleteTask = useTaskStore((state) => state.deleteTask);
   const getTasksByCategory = useTaskStore((state) => state.getTasksByCategory);
 
   const categories = useCategoryStore((state) => state.categories);
@@ -28,6 +32,21 @@ export const TasksScreen: React.FC = () => {
 
   const selectedCategory = useUiStore((state) => state.selectedCategory);
   const setSelectedCategory = useUiStore((state) => state.setSelectedCategory);
+
+  // Get current title based on selected category
+  const getCurrentTitle = () => {
+    if (selectedCategory === null) {
+      return 'All Tasks';
+    }
+    const category = categories.find(c => c.id === selectedCategory);
+    return category?.name || 'All Tasks';
+  };
+
+  // Show category filter modal
+  const showCategoryFilter = () => {
+    Haptics.selectionAsync();
+    setFilterModalVisible(true);
+  };
 
   // Initial data fetch
   useEffect(() => {
@@ -47,6 +66,7 @@ export const TasksScreen: React.FC = () => {
   };
 
   const handleCreateTask = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setSelectedTask(null);
     setModalVisible(true);
   };
@@ -76,13 +96,11 @@ export const TasksScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* Category filter */}
-      <CategoryList
-        categories={categories}
-        selectedCategoryId={selectedCategory}
-        onSelectCategory={setSelectedCategory}
-        showAllOption={true}
-        onManageCategories={() => setCategoryModalVisible(true)}
+      {/* Header */}
+      <ScreenHeader
+        title={getCurrentTitle()}
+        rightIcon="dots-vertical"
+        onRightPress={showCategoryFilter}
       />
 
       {/* Tasks list */}
@@ -90,6 +108,7 @@ export const TasksScreen: React.FC = () => {
         tasks={sortedTasks}
         onToggleComplete={toggleComplete}
         onTaskPress={handleTaskPress}
+        onDeleteTask={deleteTask}
         showCategory={selectedCategory === null}
         getCategoryName={getCategoryName}
         emptyMessage={
@@ -102,10 +121,20 @@ export const TasksScreen: React.FC = () => {
         }
       />
 
-      {/* Add task button */}
+      {/* Add task button - FAB */}
       <TouchableOpacity style={styles.fab} onPress={handleCreateTask}>
         <Text style={styles.fabText}>+</Text>
       </TouchableOpacity>
+
+      {/* Category filter modal */}
+      <CategoryFilterModal
+        visible={filterModalVisible}
+        categories={categories}
+        selectedCategoryId={selectedCategory}
+        onSelectCategory={setSelectedCategory}
+        onManageCategories={() => setCategoryModalVisible(true)}
+        onClose={() => setFilterModalVisible(false)}
+      />
 
       {/* Task detail/create modal */}
       <TaskDetailModal
