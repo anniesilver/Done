@@ -1,7 +1,7 @@
 // TaskTimePicker - Simplified date/time picker (iOS only for now)
 
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Modal, StyleSheet, Platform } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, TouchableOpacity, Modal, StyleSheet, Platform, PanResponder, Animated } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, isSameMonth, isSameDay } from 'date-fns';
@@ -22,6 +22,75 @@ export const TaskTimePicker: React.FC<TaskTimePickerProps> = ({
   const [currentMonth, setCurrentMonth] = useState(value || new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(value);
   const [selectedTime, setSelectedTime] = useState<Date>(value || new Date());
+
+  // Animation for calendar swipe
+  const slideAnim = useRef(new Animated.Value(0)).current;
+
+  // Swipe gesture for month navigation
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        // Only respond to clear horizontal swipes (more horizontal than vertical)
+        const isHorizontal = Math.abs(gestureState.dx) > Math.abs(gestureState.dy) * 1.5;
+        const hasMinDistance = Math.abs(gestureState.dx) > 15;
+        return isHorizontal && hasMinDistance;
+      },
+      onPanResponderGrant: () => {
+        // Reset animation when gesture starts
+        slideAnim.setValue(0);
+      },
+      onPanResponderMove: (_, gestureState) => {
+        // Only animate for horizontal movement
+        if (Math.abs(gestureState.dx) > Math.abs(gestureState.dy)) {
+          slideAnim.setValue(gestureState.dx * 0.5); // Dampen the movement
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        const SWIPE_THRESHOLD = 50;
+
+        if (gestureState.dx > SWIPE_THRESHOLD) {
+          // Swiped right - go to previous month
+          Haptics.selectionAsync();
+          Animated.timing(slideAnim, {
+            toValue: 400,
+            duration: 150,
+            useNativeDriver: true,
+          }).start(() => {
+            setCurrentMonth(prev => subMonths(prev, 1));
+            slideAnim.setValue(-400);
+            Animated.timing(slideAnim, {
+              toValue: 0,
+              duration: 150,
+              useNativeDriver: true,
+            }).start();
+          });
+        } else if (gestureState.dx < -SWIPE_THRESHOLD) {
+          // Swiped left - go to next month
+          Haptics.selectionAsync();
+          Animated.timing(slideAnim, {
+            toValue: -400,
+            duration: 150,
+            useNativeDriver: true,
+          }).start(() => {
+            setCurrentMonth(prev => addMonths(prev, 1));
+            slideAnim.setValue(400);
+            Animated.timing(slideAnim, {
+              toValue: 0,
+              duration: 150,
+              useNativeDriver: true,
+            }).start();
+          });
+        } else {
+          // Not enough swipe - snap back
+          Animated.spring(slideAnim, {
+            toValue: 0,
+            useNativeDriver: true,
+          }).start();
+        }
+      },
+    })
+  ).current;
 
   const getMinimumDate = () => {
     const now = new Date();
@@ -108,14 +177,20 @@ export const TaskTimePicker: React.FC<TaskTimePickerProps> = ({
                 </TouchableOpacity>
               </View>
 
-              {/* Calendar */}
-              <View style={styles.calendarContainer}>
+              {/* Calendar with swipe gesture */}
+              <View style={styles.calendarContainer} {...panResponder.panHandlers}>
                 <View style={styles.monthHeader}>
-                  <TouchableOpacity onPress={() => setCurrentMonth(subMonths(currentMonth, 1))}>
+                  <TouchableOpacity onPress={() => {
+                    Haptics.selectionAsync();
+                    setCurrentMonth(subMonths(currentMonth, 1));
+                  }}>
                     <Text style={styles.navButton}>‹</Text>
                   </TouchableOpacity>
                   <Text style={styles.monthTitle}>{format(currentMonth, 'MMMM yyyy')}</Text>
-                  <TouchableOpacity onPress={() => setCurrentMonth(addMonths(currentMonth, 1))}>
+                  <TouchableOpacity onPress={() => {
+                    Haptics.selectionAsync();
+                    setCurrentMonth(addMonths(currentMonth, 1));
+                  }}>
                     <Text style={styles.navButton}>›</Text>
                   </TouchableOpacity>
                 </View>
@@ -128,7 +203,7 @@ export const TaskTimePicker: React.FC<TaskTimePickerProps> = ({
                   ))}
                 </View>
 
-                <View style={styles.daysGrid}>
+                <Animated.View style={[styles.daysGrid, { transform: [{ translateX: slideAnim }] }]}>
                   {calendarDays.map((day, index) => {
                     const isCurrentMonth = isSameMonth(day, currentMonth);
                     const isPast = isPastDate(day);
@@ -169,7 +244,7 @@ export const TaskTimePicker: React.FC<TaskTimePickerProps> = ({
                       </TouchableOpacity>
                     );
                   })}
-                </View>
+                </Animated.View>
               </View>
 
               {/* Time Picker */}
@@ -281,6 +356,7 @@ const styles = StyleSheet.create({
   },
   calendarContainer: {
     padding: spacing.md,
+    overflow: 'hidden',
   },
   monthHeader: {
     flexDirection: 'row',

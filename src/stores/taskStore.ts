@@ -5,6 +5,8 @@ import { Task, CreateTaskInput, UpdateTaskInput } from '../types/task';
 import { taskService } from '../services/supabaseService';
 import { createRecurringInstance } from '../utils/recurringTasks';
 import { useAuthStore } from './authStore';
+import { playCompletionSound } from '../utils/sound';
+import { scheduleTaskReminder, cancelTaskReminder } from '../services/notificationService';
 
 interface TaskStore {
   // State
@@ -72,6 +74,11 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
         tasks: [task, ...state.tasks],
         isLoading: false,
       }));
+
+      // Schedule reminder notification if task has a reminder time
+      if (task.reminderTime) {
+        scheduleTaskReminder(task);
+      }
     }
   },
 
@@ -90,6 +97,14 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
         tasks: state.tasks.map((t) => (t.id === id ? task : t)),
         isLoading: false,
       }));
+
+      // Update reminder notification
+      if (task.reminderTime && !task.completed) {
+        scheduleTaskReminder(task);
+      } else {
+        // Cancel reminder if task is completed or reminder was removed
+        cancelTaskReminder(task.id);
+      }
     }
   },
 
@@ -103,6 +118,9 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       return;
     }
 
+    // Cancel reminder notification
+    cancelTaskReminder(id);
+
     set((state) => ({
       tasks: state.tasks.filter((t) => t.id !== id),
       isLoading: false,
@@ -112,6 +130,8 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   toggleComplete: async (id: number | string) => {
     const task = get().tasks.find((t) => t.id === id);
     if (!task) return;
+
+    console.log('toggleComplete - Task:', task.text, 'Current completed:', task.completed, 'Recurrence:', task.recurrence);
 
     const user = useAuthStore.getState().user;
     if (!user) return;
@@ -130,9 +150,16 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       return;
     }
 
+    // Play completion sound when marking as done
+    if (newCompleted) {
+      playCompletionSound();
+    }
+
     // If completing a recurring task, create next instance
     if (newCompleted && task.recurrence !== 'none') {
+      console.log('Creating next instance for recurring task:', task.text, 'Recurrence:', task.recurrence);
       const recurringInstance = createRecurringInstance(task);
+      console.log('Next instance due date:', recurringInstance.dueDate);
       await get().addTask(recurringInstance as CreateTaskInput);
     }
 

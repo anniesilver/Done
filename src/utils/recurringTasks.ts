@@ -57,8 +57,12 @@ const calculateReminderTime = (newDueDate: Date, originalTask: Task): Date | nul
     return null;
   }
 
+  // Ensure dates are Date objects (might be strings from database)
+  const originalDueDate = new Date(originalTask.dueDate);
+  const originalReminderTime = new Date(originalTask.reminderTime);
+
   // Calculate the offset in milliseconds
-  const offset = originalTask.dueDate.getTime() - originalTask.reminderTime.getTime();
+  const offset = originalDueDate.getTime() - originalReminderTime.getTime();
 
   // Apply same offset to new due date
   return new Date(newDueDate.getTime() - offset);
