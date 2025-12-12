@@ -6,7 +6,6 @@ import * as Haptics from 'expo-haptics';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { TaskList } from '../../components/tasks/TaskList';
 import { TaskDetailModal } from '../modals/TaskDetailModal';
-import { CategoryModal } from '../modals/CategoryModal';
 import { CategoryFilterModal } from '../../components/categories/CategoryFilterModal';
 import { useTaskStore } from '../../stores/taskStore';
 import { useCategoryStore } from '../../stores/categoryStore';
@@ -17,7 +16,6 @@ import { Task } from '../../types/task';
 export const TasksScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
-  const [categoryModalVisible, setCategoryModalVisible] = useState(false);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
@@ -132,7 +130,6 @@ export const TasksScreen: React.FC = () => {
         categories={categories}
         selectedCategoryId={selectedCategory}
         onSelectCategory={setSelectedCategory}
-        onManageCategories={() => setCategoryModalVisible(true)}
         onClose={() => setFilterModalVisible(false)}
       />
 
@@ -141,12 +138,6 @@ export const TasksScreen: React.FC = () => {
         visible={modalVisible}
         task={selectedTask}
         onClose={handleCloseModal}
-      />
-
-      {/* Category management modal */}
-      <CategoryModal
-        visible={categoryModalVisible}
-        onClose={() => setCategoryModalVisible(false)}
       />
     </View>
   );

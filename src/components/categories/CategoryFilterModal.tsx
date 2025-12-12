@@ -11,7 +11,6 @@ interface CategoryFilterModalProps {
   categories: Category[];
   selectedCategoryId: number | null;
   onSelectCategory: (categoryId: number | null) => void;
-  onManageCategories: () => void;
   onClose: () => void;
 }
 
@@ -20,22 +19,12 @@ export const CategoryFilterModal: React.FC<CategoryFilterModalProps> = ({
   categories,
   selectedCategoryId,
   onSelectCategory,
-  onManageCategories,
   onClose,
 }) => {
   const handleSelectCategory = (categoryId: number | null) => {
     Haptics.selectionAsync();
     onSelectCategory(categoryId);
     onClose();
-  };
-
-  const handleManageCategories = () => {
-    Haptics.selectionAsync();
-    onClose();
-    // Small delay to let modal close before opening manage modal
-    setTimeout(() => {
-      onManageCategories();
-    }, 300);
   };
 
   // Get category color
@@ -109,17 +98,6 @@ export const CategoryFilterModal: React.FC<CategoryFilterModalProps> = ({
                   )}
                 </TouchableOpacity>
               ))}
-
-              {/* Divider */}
-              <View style={styles.divider} />
-
-              {/* Manage Categories */}
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={handleManageCategories}
-              >
-                <Text style={styles.manageText}>Manage Categories...</Text>
-              </TouchableOpacity>
             </ScrollView>
           </TouchableOpacity>
         </View>

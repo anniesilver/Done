@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Category } from '../../types/category';
-import { CategoryFilterModal } from './CategoryFilterModal';
+import { CategorySelectionModal } from './CategorySelectionModal';
 import { colors, spacing, typography } from '../../config/theme';
 
 interface CategoryPickerProps {
@@ -12,7 +12,6 @@ interface CategoryPickerProps {
   selectedCategoryId: number | null;
   onSelectCategory: (categoryId: number | null) => void;
   label?: string;
-  allowNone?: boolean;
   showWarning?: boolean;
 }
 
@@ -21,7 +20,6 @@ export const CategoryPicker: React.FC<CategoryPickerProps> = ({
   selectedCategoryId,
   onSelectCategory,
   label = 'Category',
-  allowNone = true,
   showWarning = false,
 }) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -62,19 +60,19 @@ export const CategoryPicker: React.FC<CategoryPickerProps> = ({
             </>
           ) : (
             <Text style={[styles.selectorPlaceholder, showWarning && styles.placeholderWarning]}>
-              {allowNone ? 'None' : 'Select'}
+              Select
             </Text>
           )}
           <Text style={styles.chevron}>▶</Text>
         </View>
       </TouchableOpacity>
 
-      <CategoryFilterModal
+      <CategorySelectionModal
         visible={isModalVisible}
-        categories={categories}
         selectedCategoryId={selectedCategoryId}
-        onSelectCategory={handleSelect}
-        onManageCategories={() => {}}
+        onSelectCategory={(categoryId) => {
+          onSelectCategory(categoryId);
+        }}
         onClose={() => setIsModalVisible(false)}
       />
     </View>
