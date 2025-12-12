@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
     color: colors.ui.textInverse,
   },
   secondaryText: {
-    color: colors.primary.main,
+    color: colors.ui.textInverse,
   },
   dangerText: {
     color: colors.ui.textInverse,
