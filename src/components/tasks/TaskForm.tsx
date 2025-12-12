@@ -240,7 +240,6 @@ export const TaskForm: React.FC<TaskFormProps> = ({
                   }
                 }}
                 label="Category"
-                allowNone={true}
                 showWarning={showValidation && categoryId === null}
               />
             </View>

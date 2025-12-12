@@ -12,6 +12,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { Button } from '../../components/common/Button';
 import { Input } from '../../components/common/Input';
 import { useAuthStore } from '../../stores/authStore';
+import { useCategoryStore } from '../../stores/categoryStore';
 import { validateEmail, validatePassword, validateConfirmPassword } from '../../utils/validation';
 import { colors, spacing, typography } from '../../config/theme';
 
@@ -34,6 +35,7 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
   const [confirmPasswordError, setConfirmPasswordError] = useState<string | null>(null);
 
   const { signUp, isLoading, error, clearError } = useAuthStore();
+  const createDefaultCategories = useCategoryStore((state) => state.createDefaultCategories);
 
   const handleSignUp = async () => {
     // Clear previous errors
@@ -68,6 +70,13 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
       password,
       confirmPassword,
     });
+
+    // Check if signup was successful (no error in store)
+    const currentError = useAuthStore.getState().error;
+    if (!currentError) {
+      // Create default categories for new user
+      await createDefaultCategories();
+    }
   };
 
   return (
