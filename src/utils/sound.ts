@@ -14,13 +14,16 @@ export const initializeSound = async () => {
     });
 
     // Load the completion sound
+    // Note: require() must be used directly, not wrapped in { uri: }
     const { sound } = await Audio.Sound.createAsync(
       require('../../assets/sounds/completion.ogg'),
       { shouldPlay: false }
     );
     completionSound = sound;
+    console.log('✅ Completion sound loaded successfully');
   } catch (error) {
-    console.warn('Failed to initialize completion sound:', error);
+    console.error('Failed to initialize completion sound:', error);
+    console.log('Completion sound will be unavailable');
   }
 };
 
