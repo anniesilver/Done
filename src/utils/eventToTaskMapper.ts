@@ -21,29 +21,57 @@ function calculateDuration(startDate: Date, endDate: Date): number {
  * Parse recurrence rule to simple recurrence type
  * For Phase 1, we'll only support simple recurrence patterns
  * Complex RRULE patterns will be imported as one-time events
+ *
+ * Note: On iOS, recurrenceRule is an object with a 'frequency' property
+ * On Android, it might be an RRULE string
  */
-function parseRecurrenceRule(recurrenceRule: string | null | undefined): RecurrenceType {
+function parseRecurrenceRule(recurrenceRule: any): RecurrenceType {
   if (!recurrenceRule) {
     return 'none';
   }
 
-  const rule = recurrenceRule.toUpperCase();
+  // iOS: recurrenceRule is an object with frequency property
+  if (typeof recurrenceRule === 'object' && recurrenceRule.frequency !== undefined) {
+    const frequency = recurrenceRule.frequency;
 
-  // Simple pattern matching for basic recurrence
-  if (rule.includes('FREQ=DAILY')) {
-    return 'daily';
-  }
-  if (rule.includes('FREQ=WEEKLY')) {
-    return 'weekly';
-  }
-  if (rule.includes('FREQ=MONTHLY')) {
-    return 'monthly';
-  }
-  if (rule.includes('FREQ=YEARLY')) {
-    return 'yearly';
+    // iOS Calendar.Frequency enum values
+    switch (frequency) {
+      case Calendar.Frequency.DAILY:
+      case 'daily':
+        return 'daily';
+      case Calendar.Frequency.WEEKLY:
+      case 'weekly':
+        return 'weekly';
+      case Calendar.Frequency.MONTHLY:
+      case 'monthly':
+        return 'monthly';
+      case Calendar.Frequency.YEARLY:
+      case 'yearly':
+        return 'yearly';
+      default:
+        return 'none';
+    }
   }
 
-  // For complex patterns, import as one-time event
+  // Android/String format: RRULE string
+  if (typeof recurrenceRule === 'string') {
+    const rule = recurrenceRule.toUpperCase();
+
+    if (rule.includes('FREQ=DAILY')) {
+      return 'daily';
+    }
+    if (rule.includes('FREQ=WEEKLY')) {
+      return 'weekly';
+    }
+    if (rule.includes('FREQ=MONTHLY')) {
+      return 'monthly';
+    }
+    if (rule.includes('FREQ=YEARLY')) {
+      return 'yearly';
+    }
+  }
+
+  // For complex patterns or unknown formats, import as one-time event
   return 'none';
 }
 
