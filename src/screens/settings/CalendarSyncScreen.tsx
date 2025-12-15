@@ -29,12 +29,14 @@ export function CalendarSyncScreen() {
     lastSyncTime,
     syncError,
     totalEventsImported,
+    syncInterval,
     checkPermissions,
     requestPermissions,
     loadAvailableCalendars,
     toggleCalendarSelection,
     selectAllCalendars,
     deselectAllCalendars,
+    setSyncInterval,
     syncCalendars,
     quickSync,
     clearSyncError,
@@ -204,6 +206,45 @@ export function CalendarSyncScreen() {
               </Text>
             </View>
           </View>
+        </View>
+
+        <Divider />
+
+        {/* Sync Interval Section */}
+        <View style={styles.section}>
+          <Text variant="titleMedium" style={styles.sectionTitle}>
+            Sync Frequency
+          </Text>
+          <View style={styles.intervalContainer}>
+            <Button
+              mode={syncInterval === 'manual' ? 'contained' : 'outlined'}
+              onPress={() => setSyncInterval('manual')}
+              style={styles.intervalButton}
+            >
+              Manual
+            </Button>
+            <Button
+              mode={syncInterval === 'hourly' ? 'contained' : 'outlined'}
+              onPress={() => setSyncInterval('hourly')}
+              style={styles.intervalButton}
+            >
+              Hourly
+            </Button>
+            <Button
+              mode={syncInterval === 'daily' ? 'contained' : 'outlined'}
+              onPress={() => setSyncInterval('daily')}
+              style={styles.intervalButton}
+            >
+              Daily
+            </Button>
+          </View>
+          <Text variant="bodySmall" style={styles.helperText}>
+            {syncInterval === 'manual'
+              ? 'Calendar events will only sync when you tap the sync button'
+              : `Calendar events will automatically sync ${
+                  syncInterval === 'hourly' ? 'every hour' : 'once per day'
+                } in the background`}
+          </Text>
         </View>
 
         <Divider />
@@ -392,6 +433,14 @@ const styles = StyleSheet.create({
   },
   syncButton: {
     marginBottom: 8,
+  },
+  intervalContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    marginVertical: 12,
+  },
+  intervalButton: {
+    flex: 1,
   },
   helperText: {
     textAlign: 'center',

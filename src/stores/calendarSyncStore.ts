@@ -3,6 +3,7 @@
 import { create } from 'zustand';
 import { calendarImportService, CalendarInfo, CalendarSyncResult } from '../services/calendarImportService';
 import { calendarPermissionService, CalendarPermissionStatus } from '../services/calendarPermissionService';
+import { backgroundSyncService, SyncInterval } from '../services/backgroundSyncService';
 import { useAuthStore } from './authStore';
 import { useTaskStore } from './taskStore';
 
@@ -18,6 +19,10 @@ export interface CalendarSyncState {
   isSyncing: boolean;
   lastSyncTime: Date | null;
   syncError: string | null;
+
+  // Background sync settings
+  syncInterval: SyncInterval;
+  isBackgroundSyncEnabled: boolean;
 
   // Sync tracking (for deduplication)
   importedEventIds: Set<string>;
@@ -42,6 +47,12 @@ interface CalendarSyncStore extends CalendarSyncState {
   syncCalendars: (daysAhead?: number) => Promise<CalendarSyncResult>;
   quickSync: () => Promise<CalendarSyncResult>;
 
+  // Background sync actions
+  setSyncInterval: (interval: SyncInterval) => Promise<boolean>;
+  enableBackgroundSync: (interval: SyncInterval) => Promise<boolean>;
+  disableBackgroundSync: () => Promise<boolean>;
+  checkBackgroundSyncStatus: () => Promise<void>;
+
   // Utilities
   clearSyncError: () => void;
   resetSyncState: () => void;
@@ -57,6 +68,8 @@ export const useCalendarSyncStore = create<CalendarSyncStore>((set, get) => ({
   isSyncing: false,
   lastSyncTime: null,
   syncError: null,
+  syncInterval: 'manual',
+  isBackgroundSyncEnabled: false,
   importedEventIds: new Set<string>(),
   totalEventsImported: 0,
 
@@ -325,5 +338,71 @@ export const useCalendarSyncStore = create<CalendarSyncStore>((set, get) => ({
     const newSet = new Set(importedEventIds);
     eventIds.forEach((id) => newSet.add(id));
     set({ importedEventIds: newSet });
+  },
+
+  // Background sync actions
+  setSyncInterval: async (interval: SyncInterval) => {
+    try {
+      const success = await backgroundSyncService.registerBackgroundSync(interval);
+
+      if (success) {
+        set({
+          syncInterval: interval,
+          isBackgroundSyncEnabled: interval !== 'manual',
+        });
+      }
+
+      return success;
+    } catch (error) {
+      console.error('Error setting sync interval:', error);
+      return false;
+    }
+  },
+
+  enableBackgroundSync: async (interval: SyncInterval) => {
+    try {
+      const success = await backgroundSyncService.registerBackgroundSync(interval);
+
+      if (success) {
+        set({
+          syncInterval: interval,
+          isBackgroundSyncEnabled: true,
+        });
+      }
+
+      return success;
+    } catch (error) {
+      console.error('Error enabling background sync:', error);
+      set({ syncError: 'Failed to enable background sync' });
+      return false;
+    }
+  },
+
+  disableBackgroundSync: async () => {
+    try {
+      const success = await backgroundSyncService.unregisterBackgroundSync();
+
+      if (success) {
+        set({
+          syncInterval: 'manual',
+          isBackgroundSyncEnabled: false,
+        });
+      }
+
+      return success;
+    } catch (error) {
+      console.error('Error disabling background sync:', error);
+      return false;
+    }
+  },
+
+  checkBackgroundSyncStatus: async () => {
+    try {
+      const isRegistered = await backgroundSyncService.isTaskRegistered();
+      set({ isBackgroundSyncEnabled: isRegistered });
+    } catch (error) {
+      console.error('Error checking background sync status:', error);
+      set({ isBackgroundSyncEnabled: false });
+    }
   },
 }));

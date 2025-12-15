@@ -17,7 +17,7 @@ module.exports = {
       bundleIdentifier: 'com.anniesilver.done',
       buildNumber: '2',
       infoPlist: {
-        UIBackgroundModes: ['remote-notification'],
+        UIBackgroundModes: ['remote-notification', 'fetch'],
         ITSAppUsesNonExemptEncryption: false,
         NSCalendarsUsageDescription: 'This app needs access to your calendar to sync events as tasks.',
       },
