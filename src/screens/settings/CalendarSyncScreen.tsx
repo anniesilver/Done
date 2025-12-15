@@ -7,6 +7,7 @@ import {
   Platform,
   Linking,
 } from 'react-native';
+import Constants from 'expo-constants';
 import {
   Text,
   Button,
@@ -43,6 +44,9 @@ export function CalendarSyncScreen() {
   } = useCalendarSyncStore();
 
   const [isInitializing, setIsInitializing] = useState(true);
+
+  // Check if running in Expo Go (background fetch not supported)
+  const isExpoGo = Constants.appOwnership === 'expo';
 
   useEffect(() => {
     initializeScreen();
@@ -215,36 +219,50 @@ export function CalendarSyncScreen() {
           <Text variant="titleMedium" style={styles.sectionTitle}>
             Sync Frequency
           </Text>
-          <View style={styles.intervalContainer}>
-            <Button
-              mode={syncInterval === 'manual' ? 'contained' : 'outlined'}
-              onPress={() => setSyncInterval('manual')}
-              style={styles.intervalButton}
+
+          {isExpoGo ? (
+            <Banner
+              visible={true}
+              icon="information"
+              style={styles.expoGoBanner}
             >
-              Manual
-            </Button>
-            <Button
-              mode={syncInterval === 'hourly' ? 'contained' : 'outlined'}
-              onPress={() => setSyncInterval('hourly')}
-              style={styles.intervalButton}
-            >
-              Hourly
-            </Button>
-            <Button
-              mode={syncInterval === 'daily' ? 'contained' : 'outlined'}
-              onPress={() => setSyncInterval('daily')}
-              style={styles.intervalButton}
-            >
-              Daily
-            </Button>
-          </View>
-          <Text variant="bodySmall" style={styles.helperText}>
-            {syncInterval === 'manual'
-              ? 'Calendar events will only sync when you tap the sync button'
-              : `Calendar events will automatically sync ${
-                  syncInterval === 'hourly' ? 'every hour' : 'once per day'
-                } in the background`}
-          </Text>
+              Background sync is not available in Expo Go. Please use a development build or
+              TestFlight build to enable automatic syncing.
+            </Banner>
+          ) : (
+            <>
+              <View style={styles.intervalContainer}>
+                <Button
+                  mode={syncInterval === 'manual' ? 'contained' : 'outlined'}
+                  onPress={() => setSyncInterval('manual')}
+                  style={styles.intervalButton}
+                >
+                  Manual
+                </Button>
+                <Button
+                  mode={syncInterval === 'hourly' ? 'contained' : 'outlined'}
+                  onPress={() => setSyncInterval('hourly')}
+                  style={styles.intervalButton}
+                >
+                  Hourly
+                </Button>
+                <Button
+                  mode={syncInterval === 'daily' ? 'contained' : 'outlined'}
+                  onPress={() => setSyncInterval('daily')}
+                  style={styles.intervalButton}
+                >
+                  Daily
+                </Button>
+              </View>
+              <Text variant="bodySmall" style={styles.helperText}>
+                {syncInterval === 'manual'
+                  ? 'Calendar events will only sync when you tap the sync button'
+                  : `Calendar events will automatically sync ${
+                      syncInterval === 'hourly' ? 'every hour' : 'once per day'
+                    } in the background`}
+              </Text>
+            </>
+          )}
         </View>
 
         <Divider />
