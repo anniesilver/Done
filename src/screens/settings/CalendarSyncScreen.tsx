@@ -18,7 +18,7 @@ import {
   IconButton,
 } from 'react-native-paper';
 import { useCalendarSyncStore } from '../../stores/calendarSyncStore';
-import { theme } from '../../config/theme';
+import { theme, colors } from '../../config/theme';
 
 export function CalendarSyncScreen() {
   const {
@@ -120,7 +120,7 @@ export function CalendarSyncScreen() {
   if (isInitializing) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <ActivityIndicator size="large" color={colors.primary.main} />
         <Text style={styles.loadingText}>Checking permissions...</Text>
       </View>
     );
@@ -135,7 +135,7 @@ export function CalendarSyncScreen() {
             <IconButton
               icon="calendar-alert"
               size={64}
-              iconColor={theme.colors.primary}
+              iconColor={colors.primary.main}
             />
             <Text variant="headlineSmall" style={styles.permissionTitle}>
               Calendar Access Required
@@ -318,7 +318,7 @@ export function CalendarSyncScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: colors.ui.background,
   },
   content: {
     flex: 1,
@@ -327,11 +327,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: theme.colors.background,
+    backgroundColor: colors.ui.background,
   },
   loadingText: {
     marginTop: 16,
-    color: theme.colors.onBackground,
+    color: colors.text.primary,
   },
   permissionSection: {
     padding: 24,
@@ -342,18 +342,18 @@ const styles = StyleSheet.create({
     marginTop: 16,
     marginBottom: 12,
     textAlign: 'center',
-    color: theme.colors.onBackground,
+    color: colors.text.primary,
   },
   permissionDescription: {
     marginBottom: 12,
     textAlign: 'center',
-    color: theme.colors.onSurfaceVariant,
+    color: colors.text.secondary,
   },
   permissionNote: {
     marginBottom: 24,
     textAlign: 'center',
     fontStyle: 'italic',
-    color: theme.colors.onSurfaceVariant,
+    color: colors.text.secondary,
   },
   permissionButton: {
     marginTop: 8,
@@ -368,7 +368,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    color: theme.colors.onBackground,
+    color: colors.text.primary,
   },
   headerActions: {
     flexDirection: 'row',
@@ -383,11 +383,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statLabel: {
-    color: theme.colors.onSurfaceVariant,
+    color: colors.text.secondary,
     marginBottom: 4,
   },
   statValue: {
-    color: theme.colors.primary,
+    color: colors.primary.main,
     fontWeight: 'bold',
   },
   syncButton: {
@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
   },
   helperText: {
     textAlign: 'center',
-    color: theme.colors.onSurfaceVariant,
+    color: colors.text.secondary,
   },
   emptyState: {
     padding: 24,
@@ -418,7 +418,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   infoText: {
-    color: theme.colors.onSurfaceVariant,
+    color: colors.text.secondary,
     marginBottom: 8,
     lineHeight: 20,
   },
