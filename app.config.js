@@ -19,6 +19,7 @@ module.exports = {
       infoPlist: {
         UIBackgroundModes: ['remote-notification'],
         ITSAppUsesNonExemptEncryption: false,
+        NSCalendarsUsageDescription: 'This app needs access to your calendar to sync events as tasks.',
       },
     },
     android: {

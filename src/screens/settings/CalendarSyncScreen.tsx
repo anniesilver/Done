@@ -1,0 +1,425 @@
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  Alert,
+  Platform,
+  Linking,
+} from 'react-native';
+import {
+  Text,
+  Button,
+  List,
+  ActivityIndicator,
+  Checkbox,
+  Banner,
+  Divider,
+  IconButton,
+} from 'react-native-paper';
+import { useCalendarSyncStore } from '../../stores/calendarSyncStore';
+import { theme } from '../../config/theme';
+
+export function CalendarSyncScreen() {
+  const {
+    permissionStatus,
+    availableCalendars,
+    selectedCalendarIds,
+    isSyncing,
+    lastSyncTime,
+    syncError,
+    totalEventsImported,
+    checkPermissions,
+    requestPermissions,
+    loadAvailableCalendars,
+    toggleCalendarSelection,
+    selectAllCalendars,
+    deselectAllCalendars,
+    syncCalendars,
+    quickSync,
+    clearSyncError,
+  } = useCalendarSyncStore();
+
+  const [isInitializing, setIsInitializing] = useState(true);
+
+  useEffect(() => {
+    initializeScreen();
+  }, []);
+
+  const initializeScreen = async () => {
+    setIsInitializing(true);
+    await checkPermissions();
+    setIsInitializing(false);
+  };
+
+  const handleRequestPermissions = async () => {
+    const granted = await requestPermissions();
+
+    if (granted) {
+      await loadAvailableCalendars();
+    } else {
+      Alert.alert(
+        'Permission Denied',
+        'Calendar permissions are required to sync events. Please enable them in Settings.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Open Settings', onPress: () => Linking.openSettings() },
+        ]
+      );
+    }
+  };
+
+  const handleSync = async () => {
+    if (selectedCalendarIds.length === 0) {
+      Alert.alert('No Calendars Selected', 'Please select at least one calendar to sync.');
+      return;
+    }
+
+    const result = await syncCalendars(30); // Sync next 30 days
+
+    if (result.success) {
+      Alert.alert(
+        'Sync Complete',
+        `Successfully imported ${result.eventsImported} event(s) as tasks.`
+      );
+    } else {
+      Alert.alert('Sync Failed', result.errors.join('\n'));
+    }
+  };
+
+  const handleQuickSync = async () => {
+    const result = await quickSync();
+
+    if (result.success) {
+      Alert.alert(
+        'Quick Sync Complete',
+        `Successfully imported ${result.eventsImported} event(s) as tasks.`
+      );
+    } else {
+      Alert.alert('Quick Sync Failed', result.errors.join('\n'));
+    }
+  };
+
+  const formatLastSyncTime = () => {
+    if (!lastSyncTime) return 'Never';
+
+    const now = new Date();
+    const diff = now.getTime() - lastSyncTime.getTime();
+    const minutes = Math.floor(diff / 60000);
+
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes} minute(s) ago`;
+
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} hour(s) ago`;
+
+    const days = Math.floor(hours / 24);
+    return `${days} day(s) ago`;
+  };
+
+  if (isInitializing) {
+    return (
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <Text style={styles.loadingText}>Checking permissions...</Text>
+      </View>
+    );
+  }
+
+  // Permission not granted
+  if (!permissionStatus?.granted) {
+    return (
+      <ScrollView style={styles.container}>
+        <View style={styles.content}>
+          <View style={styles.permissionSection}>
+            <IconButton
+              icon="calendar-alert"
+              size={64}
+              iconColor={theme.colors.primary}
+            />
+            <Text variant="headlineSmall" style={styles.permissionTitle}>
+              Calendar Access Required
+            </Text>
+            <Text variant="bodyMedium" style={styles.permissionDescription}>
+              To sync your calendar events as tasks, we need permission to access your device
+              calendar.
+            </Text>
+            <Text variant="bodyMedium" style={styles.permissionNote}>
+              Your calendar data stays private and is only used to import events into this app.
+            </Text>
+            <Button
+              mode="contained"
+              onPress={handleRequestPermissions}
+              style={styles.permissionButton}
+              icon="calendar-check"
+            >
+              Grant Calendar Access
+            </Button>
+          </View>
+        </View>
+      </ScrollView>
+    );
+  }
+
+  // Permission granted - show sync interface
+  return (
+    <ScrollView style={styles.container}>
+      <View style={styles.content}>
+        {/* Error Banner */}
+        {syncError && (
+          <Banner
+            visible={true}
+            actions={[
+              {
+                label: 'Dismiss',
+                onPress: clearSyncError,
+              },
+            ]}
+            icon="alert-circle"
+          >
+            {syncError}
+          </Banner>
+        )}
+
+        {/* Sync Status Section */}
+        <View style={styles.section}>
+          <Text variant="titleMedium" style={styles.sectionTitle}>
+            Sync Status
+          </Text>
+          <View style={styles.statsContainer}>
+            <View style={styles.statItem}>
+              <Text variant="bodySmall" style={styles.statLabel}>
+                Last Sync
+              </Text>
+              <Text variant="bodyLarge" style={styles.statValue}>
+                {formatLastSyncTime()}
+              </Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text variant="bodySmall" style={styles.statLabel}>
+                Events Imported
+              </Text>
+              <Text variant="bodyLarge" style={styles.statValue}>
+                {totalEventsImported}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        <Divider />
+
+        {/* Sync Actions */}
+        <View style={styles.section}>
+          <Button
+            mode="contained"
+            onPress={handleSync}
+            loading={isSyncing}
+            disabled={isSyncing || selectedCalendarIds.length === 0}
+            icon="sync"
+            style={styles.syncButton}
+          >
+            {isSyncing ? 'Syncing...' : 'Sync Selected Calendars'}
+          </Button>
+          <Text variant="bodySmall" style={styles.helperText}>
+            Import events from the next 30 days
+          </Text>
+        </View>
+
+        <Divider />
+
+        {/* Calendar Selection */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text variant="titleMedium" style={styles.sectionTitle}>
+              Select Calendars
+            </Text>
+            <View style={styles.headerActions}>
+              <Button onPress={selectAllCalendars} compact>
+                Select All
+              </Button>
+              <Button onPress={deselectAllCalendars} compact>
+                Clear
+              </Button>
+            </View>
+          </View>
+
+          {availableCalendars.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text variant="bodyMedium">No calendars available</Text>
+              <Button
+                mode="outlined"
+                onPress={loadAvailableCalendars}
+                style={styles.reloadButton}
+                icon="reload"
+              >
+                Reload Calendars
+              </Button>
+            </View>
+          ) : (
+            <View>
+              {availableCalendars.map((calendar) => (
+                <List.Item
+                  key={calendar.id}
+                  title={calendar.title}
+                  description={calendar.source}
+                  left={() => (
+                    <View style={styles.calendarIndicator}>
+                      <View
+                        style={[
+                          styles.colorDot,
+                          { backgroundColor: calendar.color },
+                        ]}
+                      />
+                    </View>
+                  )}
+                  right={() => (
+                    <Checkbox
+                      status={
+                        selectedCalendarIds.includes(calendar.id)
+                          ? 'checked'
+                          : 'unchecked'
+                      }
+                      onPress={() => toggleCalendarSelection(calendar.id)}
+                    />
+                  )}
+                  onPress={() => toggleCalendarSelection(calendar.id)}
+                />
+              ))}
+            </View>
+          )}
+
+          {availableCalendars.length === 0 && (
+            <Button
+              mode="text"
+              onPress={loadAvailableCalendars}
+              style={styles.loadButton}
+            >
+              Load Available Calendars
+            </Button>
+          )}
+        </View>
+
+        {/* Info Section */}
+        <View style={styles.section}>
+          <Text variant="bodySmall" style={styles.infoText}>
+            ℹ️ Events are imported as tasks with their original due dates, reminders, and
+            recurrence patterns.
+          </Text>
+          <Text variant="bodySmall" style={styles.infoText}>
+            ℹ️ Only future events (up to 30 days ahead) are synced. Already-imported events
+            won't be duplicated.
+          </Text>
+        </View>
+      </View>
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+  },
+  content: {
+    flex: 1,
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: theme.colors.background,
+  },
+  loadingText: {
+    marginTop: 16,
+    color: theme.colors.onBackground,
+  },
+  permissionSection: {
+    padding: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  permissionTitle: {
+    marginTop: 16,
+    marginBottom: 12,
+    textAlign: 'center',
+    color: theme.colors.onBackground,
+  },
+  permissionDescription: {
+    marginBottom: 12,
+    textAlign: 'center',
+    color: theme.colors.onSurfaceVariant,
+  },
+  permissionNote: {
+    marginBottom: 24,
+    textAlign: 'center',
+    fontStyle: 'italic',
+    color: theme.colors.onSurfaceVariant,
+  },
+  permissionButton: {
+    marginTop: 8,
+  },
+  section: {
+    padding: 16,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    color: theme.colors.onBackground,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: 12,
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statLabel: {
+    color: theme.colors.onSurfaceVariant,
+    marginBottom: 4,
+  },
+  statValue: {
+    color: theme.colors.primary,
+    fontWeight: 'bold',
+  },
+  syncButton: {
+    marginBottom: 8,
+  },
+  helperText: {
+    textAlign: 'center',
+    color: theme.colors.onSurfaceVariant,
+  },
+  emptyState: {
+    padding: 24,
+    alignItems: 'center',
+  },
+  reloadButton: {
+    marginTop: 12,
+  },
+  loadButton: {
+    marginTop: 8,
+  },
+  calendarIndicator: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 40,
+  },
+  colorDot: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+  },
+  infoText: {
+    color: theme.colors.onSurfaceVariant,
+    marginBottom: 8,
+    lineHeight: 20,
+  },
+});

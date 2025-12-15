@@ -1,6 +1,7 @@
 // Task type definitions
 
 export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly';
+export type SourceType = 'manual' | 'iphone_calendar' | 'google_calendar';
 
 export interface Task {
   id: number | string;
@@ -13,6 +14,11 @@ export interface Task {
   duration: number; // in minutes
   userId: string;
   createdAt: Date;
+
+  // Calendar sync metadata
+  sourceType: SourceType;
+  sourceEventId: string | null; // External event ID for deduplication
+  syncedAt: Date | null; // When this was imported from calendar
 
   // Metadata for offline sync (Phase 2)
   _isTemporary?: boolean;
@@ -27,6 +33,9 @@ export interface CreateTaskInput {
   recurrence?: RecurrenceType;
   categoryId?: number | null;
   duration?: number;
+  sourceType?: SourceType;
+  sourceEventId?: string | null;
+  syncedAt?: Date | null;
 }
 
 export interface UpdateTaskInput {
@@ -37,4 +46,7 @@ export interface UpdateTaskInput {
   recurrence?: RecurrenceType;
   categoryId?: number | null;
   duration?: number;
+  sourceType?: SourceType;
+  sourceEventId?: string | null;
+  syncedAt?: Date | null;
 }
