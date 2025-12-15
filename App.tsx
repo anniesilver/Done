@@ -15,13 +15,14 @@ export default function App() {
     };
     initialize();
 
-    // Start the recurring task processor
-    const stopProcessor = startRecurringTaskProcessor();
+    // DISABLED: Recurring task processor was creating duplicates
+    // Recurring instances are already created when tasks are completed (see taskStore.toggleComplete)
+    // const stopProcessor = startRecurringTaskProcessor();
 
     // Cleanup on unmount
-    return () => {
-      stopProcessor();
-    };
+    // return () => {
+    //   stopProcessor();
+    // };
   }, []);
 
   return (
