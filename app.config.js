@@ -15,10 +15,15 @@ module.exports = {
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.anniesilver.done',
-      buildNumber: '2',
+      buildNumber: '3',
       infoPlist: {
-        UIBackgroundModes: ['remote-notification'],
+        UIBackgroundModes: ['remote-notification', 'fetch', 'processing'],
         ITSAppUsesNonExemptEncryption: false,
+        NSCalendarsUsageDescription: 'This app needs access to your calendar to sync events as tasks.',
+        NSUserNotificationsUsageDescription: 'This app needs to send you reminders for your tasks.',
+      },
+      entitlements: {
+        'aps-environment': 'development',
       },
     },
     android: {
@@ -32,7 +37,21 @@ module.exports = {
     web: {
       bundler: 'metro',
     },
-    plugins: [],
+    plugins: [
+      'expo-notifications',
+      [
+        'expo-background-fetch',
+        {
+          // Enable background fetch for calendar sync
+        }
+      ],
+      [
+        'expo-task-manager',
+        {
+          // Required for background tasks
+        }
+      ]
+    ],
     platforms: ['ios', 'android', 'web'],
     extra: {
       eas: {

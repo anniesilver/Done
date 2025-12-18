@@ -3,6 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Text } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { CalendarGrid } from '../../components/calendar/CalendarGrid';
 import { WeeklyView } from '../../components/calendar/WeeklyView';
@@ -14,8 +16,12 @@ import { useUiStore } from '../../stores/uiStore';
 import { colors, spacing, typography } from '../../config/theme';
 import { format, addMonths, subMonths, addWeeks, subWeeks, isSameDay } from 'date-fns';
 import { Task } from '../../types/task';
+import { RootStackParamList } from '../../navigation/RootNavigator';
+
+type NavigationProp = StackNavigationProp<RootStackParamList, 'MainTabs'>;
 
 export const CalendarScreen: React.FC = () => {
+  const navigation = useNavigation<NavigationProp>();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -49,6 +55,12 @@ export const CalendarScreen: React.FC = () => {
   // Get view mode icon
   const getViewModeIcon = () => {
     return calendarViewMode === 'monthly' ? 'calendar-week' : 'calendar-month';
+  };
+
+  // Navigate to calendar sync settings
+  const handleOpenSyncSettings = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    navigation.navigate('CalendarSync');
   };
 
   const handleSelectDate = (date: Date) => {
@@ -89,6 +101,8 @@ export const CalendarScreen: React.FC = () => {
         title={format(currentMonth, 'MMMM yyyy')}
         leftIcon={getViewModeIcon()}
         onLeftPress={toggleViewMode}
+        rightIcon="cog"
+        onRightPress={handleOpenSyncSettings}
       />
 
       <ScrollView>

@@ -162,6 +162,9 @@ export const taskService = {
         duration: row.duration || 0,
         userId: row.user_id,
         createdAt: new Date(row.created_at),
+        sourceType: row.source_type || 'manual',
+        sourceEventId: row.source_event_id || null,
+        syncedAt: row.synced_at ? new Date(row.synced_at) : null,
       }));
 
       return { tasks, error: null };
@@ -189,6 +192,9 @@ export const taskService = {
           recurrence: input.recurrence || 'none',
           category_id: input.categoryId || null,
           duration: input.duration || 0,
+          source_type: input.sourceType || 'manual',
+          source_event_id: input.sourceEventId || null,
+          synced_at: input.syncedAt?.toISOString() || null,
         })
         .select()
         .single();
@@ -208,6 +214,9 @@ export const taskService = {
         duration: data.duration || 0,
         userId: data.user_id,
         createdAt: new Date(data.created_at),
+        sourceType: data.source_type || 'manual',
+        sourceEventId: data.source_event_id || null,
+        syncedAt: data.synced_at ? new Date(data.synced_at) : null,
       };
 
       return { task, error: null };
@@ -235,6 +244,9 @@ export const taskService = {
       if (updates.recurrence !== undefined) updateData.recurrence = updates.recurrence;
       if (updates.categoryId !== undefined) updateData.category_id = updates.categoryId;
       if (updates.duration !== undefined) updateData.duration = updates.duration;
+      if (updates.sourceType !== undefined) updateData.source_type = updates.sourceType;
+      if (updates.sourceEventId !== undefined) updateData.source_event_id = updates.sourceEventId;
+      if (updates.syncedAt !== undefined) updateData.synced_at = updates.syncedAt?.toISOString() || null;
 
       const { data, error } = await supabase
         .from('tasks')
@@ -258,6 +270,9 @@ export const taskService = {
         duration: data.duration || 0,
         userId: data.user_id,
         createdAt: new Date(data.created_at),
+        sourceType: data.source_type || 'manual',
+        sourceEventId: data.source_event_id || null,
+        syncedAt: data.synced_at ? new Date(data.synced_at) : null,
       };
 
       return { task, error: null };
@@ -280,6 +295,37 @@ export const taskService = {
       return { error: null };
     } catch (error) {
       return { error: (error as Error).message };
+    }
+  },
+
+  /**
+   * Get all imported calendar event IDs for the current user
+   * This is used for deduplication when syncing calendar events
+   */
+  async getImportedEventIds(
+    userId: string,
+    sourceType: 'iphone_calendar' | 'google_calendar' = 'iphone_calendar'
+  ): Promise<{ eventIds: string[]; error: string | null }> {
+    try {
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('source_event_id')
+        .eq('user_id', userId)
+        .eq('source_type', sourceType)
+        .not('source_event_id', 'is', null);
+
+      if (error) {
+        return { eventIds: [], error: error.message };
+      }
+
+      // Extract event IDs from the result
+      const eventIds = (data || [])
+        .map((row: any) => row.source_event_id)
+        .filter((id: string | null) => id !== null);
+
+      return { eventIds, error: null };
+    } catch (error) {
+      return { eventIds: [], error: (error as Error).message };
     }
   },
 };

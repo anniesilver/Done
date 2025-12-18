@@ -18,8 +18,8 @@ interface TimelineViewProps {
   onDeleteTask: (taskId: number | string) => void;
 }
 
-const HOUR_HEIGHT = 80; // pixels per hour (1.33px per minute for better visibility)
-const MIN_TASK_HEIGHT = 50; // Minimum height for task blocks to ensure text visibility
+const HOUR_HEIGHT = 120; // pixels per hour (2px per minute - increased for better readability)
+const MIN_TASK_HEIGHT = 30; // Minimum height for task blocks (15 min minimum)
 const TIME_COLUMN_WIDTH = 60;
 const { width: screenWidth } = Dimensions.get('window');
 const TASK_COLUMN_WIDTH = screenWidth - TIME_COLUMN_WIDTH - spacing.md * 2;
@@ -345,11 +345,11 @@ const styles = StyleSheet.create({
   },
   swipeableContainer: {
     flex: 1,
-    borderRadius: 8,
+    borderRadius: 0,
     overflow: 'hidden',
   },
   taskBlock: {
-    borderRadius: 8,
+    borderRadius: 0,
     padding: spacing.sm,
     paddingVertical: spacing.xs + 2,
     justifyContent: 'center',
@@ -386,16 +386,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'flex-start',
     paddingHorizontal: spacing.lg,
-    borderTopLeftRadius: 8,
-    borderBottomLeftRadius: 8,
   },
   swipeActionRight: {
     backgroundColor: colors.semantic.error,
     justifyContent: 'center',
     alignItems: 'flex-end',
     paddingHorizontal: spacing.lg,
-    borderTopRightRadius: 8,
-    borderBottomRightRadius: 8,
   },
   swipeActionContent: {
     alignItems: 'center',
