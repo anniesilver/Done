@@ -28,6 +28,7 @@ export function CalendarSyncScreen() {
     selectedCalendarIds,
     isSyncing,
     lastSyncTime,
+    lastBackgroundSyncTime,
     syncError,
     totalEventsImported,
     syncInterval,
@@ -41,6 +42,7 @@ export function CalendarSyncScreen() {
     syncCalendars,
     quickSync,
     clearSyncError,
+    loadLastBackgroundSyncTime,
   } = useCalendarSyncStore();
 
   const [isInitializing, setIsInitializing] = useState(true);
@@ -52,9 +54,26 @@ export function CalendarSyncScreen() {
     initializeScreen();
   }, []);
 
+  // Periodically refresh last background sync time
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadLastBackgroundSyncTime();
+    }, 30000); // Refresh every 30 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
   const initializeScreen = async () => {
     setIsInitializing(true);
     await checkPermissions();
+    await loadLastBackgroundSyncTime();
+
+    // Load calendars if permissions granted
+    const status = useCalendarSyncStore.getState().permissionStatus;
+    if (status?.granted) {
+      await loadAvailableCalendars();
+    }
+
     setIsInitializing(false);
   };
 
@@ -122,6 +141,24 @@ export function CalendarSyncScreen() {
     const days = Math.floor(hours / 24);
     return `${days} day(s) ago`;
   };
+
+  const formatLastBackgroundSyncTime = () => {
+    if (!lastBackgroundSyncTime) return 'Never';
+
+    const now = new Date();
+    const diff = now.getTime() - lastBackgroundSyncTime.getTime();
+    const minutes = Math.floor(diff / 60000);
+
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes} minute(s) ago`;
+
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} hour(s) ago`;
+
+    const days = Math.floor(hours / 24);
+    return `${days} day(s) ago`;
+  };
+
 
   if (isInitializing) {
     return (
@@ -195,10 +232,18 @@ export function CalendarSyncScreen() {
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
               <Text variant="bodySmall" style={styles.statLabel}>
-                Last Sync
+                Last Manual Sync
               </Text>
               <Text variant="bodyLarge" style={styles.statValue}>
                 {formatLastSyncTime()}
+              </Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text variant="bodySmall" style={styles.statLabel}>
+                Last Auto Sync
+              </Text>
+              <Text variant="bodyLarge" style={styles.statValue}>
+                {formatLastBackgroundSyncTime()}
               </Text>
             </View>
             <View style={styles.statItem}>
@@ -437,9 +482,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     paddingVertical: 12,
+    flexWrap: 'wrap',
+    gap: 16,
   },
   statItem: {
     alignItems: 'center',
+    minWidth: '30%',
   },
   statLabel: {
     color: colors.text.secondary,

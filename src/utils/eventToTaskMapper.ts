@@ -142,7 +142,9 @@ export function mapEventToTask(
     categoryId,
     duration,
     sourceType: 'iphone_calendar',
-    sourceEventId: event.id,
+    // Use originalId for recurring events (parent event ID), fallback to id for non-recurring
+    // This ensures we track the parent recurring event, not individual instances
+    sourceEventId: event.originalId || event.id,
     syncedAt: new Date(),
   };
 

@@ -297,6 +297,37 @@ export const taskService = {
       return { error: (error as Error).message };
     }
   },
+
+  /**
+   * Get all imported calendar event IDs for the current user
+   * This is used for deduplication when syncing calendar events
+   */
+  async getImportedEventIds(
+    userId: string,
+    sourceType: 'iphone_calendar' | 'google_calendar' = 'iphone_calendar'
+  ): Promise<{ eventIds: string[]; error: string | null }> {
+    try {
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('source_event_id')
+        .eq('user_id', userId)
+        .eq('source_type', sourceType)
+        .not('source_event_id', 'is', null);
+
+      if (error) {
+        return { eventIds: [], error: error.message };
+      }
+
+      // Extract event IDs from the result
+      const eventIds = (data || [])
+        .map((row: any) => row.source_event_id)
+        .filter((id: string | null) => id !== null);
+
+      return { eventIds, error: null };
+    } catch (error) {
+      return { eventIds: [], error: (error as Error).message };
+    }
+  },
 };
 
 // ==================== CATEGORY METHODS ====================

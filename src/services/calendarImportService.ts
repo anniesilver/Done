@@ -104,8 +104,27 @@ class CalendarImportService {
       // Fetch events from selected calendars
       const events = await this.getEventsFromCalendars(calendarIds, startDate, endDate);
 
-      // Filter out already-imported events
-      const newEvents = events.filter((event) => !existingEventIds.has(event.id));
+      // For recurring events, getEventsAsync returns multiple instances (one per occurrence)
+      // We need to deduplicate by originalId (parent recurring event ID) to avoid importing
+      // the same recurring event multiple times
+      const uniqueEvents = new Map<string, Calendar.Event>();
+
+      for (const event of events) {
+        // Use originalId for recurring events, fallback to id for non-recurring
+        const eventKey = event.originalId || event.id;
+
+        // Skip if already imported
+        if (existingEventIds.has(eventKey)) {
+          continue;
+        }
+
+        // If we haven't seen this event yet, or if this is an earlier instance, keep it
+        if (!uniqueEvents.has(eventKey)) {
+          uniqueEvents.set(eventKey, event);
+        }
+      }
+
+      const newEvents = Array.from(uniqueEvents.values());
 
       if (newEvents.length === 0) {
         return {

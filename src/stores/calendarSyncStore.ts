@@ -18,6 +18,7 @@ export interface CalendarSyncState {
   // Sync state
   isSyncing: boolean;
   lastSyncTime: Date | null;
+  lastBackgroundSyncTime: Date | null;
   syncError: string | null;
 
   // Background sync settings
@@ -52,6 +53,7 @@ interface CalendarSyncStore extends CalendarSyncState {
   enableBackgroundSync: (interval: SyncInterval) => Promise<boolean>;
   disableBackgroundSync: () => Promise<boolean>;
   checkBackgroundSyncStatus: () => Promise<void>;
+  loadLastBackgroundSyncTime: () => Promise<void>;
 
   // Utilities
   clearSyncError: () => void;
@@ -67,6 +69,7 @@ export const useCalendarSyncStore = create<CalendarSyncStore>((set, get) => ({
   selectedCalendarIds: [],
   isSyncing: false,
   lastSyncTime: null,
+  lastBackgroundSyncTime: null,
   syncError: null,
   syncInterval: 'manual',
   isBackgroundSyncEnabled: false,
@@ -180,12 +183,19 @@ export const useCalendarSyncStore = create<CalendarSyncStore>((set, get) => ({
     set({ isSyncing: true, syncError: null });
 
     try {
+      // Load already-imported event IDs from database
+      const { taskService } = await import('../services/supabaseService');
+      const { eventIds: dbEventIds } = await taskService.getImportedEventIds(user.id, 'iphone_calendar');
+
+      // Merge database IDs with in-memory IDs
+      const allImportedEventIds = new Set([...importedEventIds, ...dbEventIds]);
+
       // Import events as tasks
       const result = await calendarImportService.importEventsAsTasks(
         selectedCalendarIds,
         user.id,
         daysAhead,
-        importedEventIds
+        allImportedEventIds
       );
 
       if (!result.success) {
@@ -257,8 +267,15 @@ export const useCalendarSyncStore = create<CalendarSyncStore>((set, get) => ({
     set({ isSyncing: true, syncError: null });
 
     try {
+      // Load already-imported event IDs from database
+      const { taskService } = await import('../services/supabaseService');
+      const { eventIds: dbEventIds } = await taskService.getImportedEventIds(user.id, 'iphone_calendar');
+
+      // Merge database IDs with in-memory IDs
+      const allImportedEventIds = new Set([...importedEventIds, ...dbEventIds]);
+
       // Quick sync from default calendars
-      const result = await calendarImportService.quickSync(user.id, importedEventIds);
+      const result = await calendarImportService.quickSync(user.id, allImportedEventIds);
 
       if (!result.success) {
         set({
@@ -343,25 +360,67 @@ export const useCalendarSyncStore = create<CalendarSyncStore>((set, get) => ({
   // Background sync actions
   setSyncInterval: async (interval: SyncInterval) => {
     try {
-      const success = await backgroundSyncService.registerBackgroundSync(interval);
+      const { selectedCalendarIds } = get();
+      const user = useAuthStore.getState().user;
+
+      if (!user) {
+        const errorMsg = 'User not authenticated. Please log in to enable background sync.';
+        console.error(errorMsg);
+        set({ syncError: errorMsg });
+        return false;
+      }
+
+      if (interval !== 'manual' && selectedCalendarIds.length === 0) {
+        const errorMsg = 'No calendars selected. Please select calendars before enabling background sync.';
+        console.error(errorMsg);
+        set({ syncError: errorMsg });
+        return false;
+      }
+
+      const success = await backgroundSyncService.registerBackgroundSync(
+        interval,
+        user.id,
+        selectedCalendarIds
+      );
 
       if (success) {
         set({
           syncInterval: interval,
           isBackgroundSyncEnabled: interval !== 'manual',
         });
+      } else {
+        set({ syncError: 'Failed to register background sync. Please try again.' });
       }
 
       return success;
     } catch (error) {
-      console.error('Error setting sync interval:', error);
+      const errorMsg = `Error setting sync interval: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      console.error(errorMsg);
+      set({ syncError: errorMsg });
       return false;
     }
   },
 
   enableBackgroundSync: async (interval: SyncInterval) => {
     try {
-      const success = await backgroundSyncService.registerBackgroundSync(interval);
+      const { selectedCalendarIds } = get();
+      const user = useAuthStore.getState().user;
+
+      if (!user) {
+        set({ syncError: 'User not authenticated' });
+        return false;
+      }
+
+      if (selectedCalendarIds.length === 0) {
+        set({ syncError: 'No calendars selected' });
+        return false;
+      }
+
+      const success = await backgroundSyncService.registerBackgroundSync(
+        interval,
+        user.id,
+        selectedCalendarIds
+      );
 
       if (success) {
         set({
@@ -403,6 +462,16 @@ export const useCalendarSyncStore = create<CalendarSyncStore>((set, get) => ({
     } catch (error) {
       console.error('Error checking background sync status:', error);
       set({ isBackgroundSyncEnabled: false });
+    }
+  },
+
+  loadLastBackgroundSyncTime: async () => {
+    try {
+      const lastSyncTime = await backgroundSyncService.getLastBackgroundSyncTime();
+      set({ lastBackgroundSyncTime: lastSyncTime });
+    } catch (error) {
+      console.error('Error loading last background sync time:', error);
+      set({ lastBackgroundSyncTime: null });
     }
   },
 }));

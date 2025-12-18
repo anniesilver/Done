@@ -5,13 +5,19 @@ import { Platform } from 'react-native';
 import { Task } from '../types/task';
 
 // Configure how notifications should be handled when the app is in the foreground
-// Only show notifications in background/when app is closed - not when actively using the app
+// Note: Returning null means use default iOS/Android behavior
+// iOS default: notifications only show when app is backgrounded/terminated
+// Android default: notifications show in notification tray
 Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: false, // Don't show alert when app is in foreground
-    shouldPlaySound: false, // Don't play sound when app is in foreground
-    shouldSetBadge: true, // Still update badge count
-  }),
+  handleNotification: async () => {
+    // Return null to use default system behavior
+    // This ensures scheduled notifications work properly
+    return {
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: true,
+    };
+  },
 });
 
 // Request notification permissions
@@ -89,7 +95,12 @@ export const scheduleTaskReminder = async (task: Task): Promise<string | null> =
       console.log('🔕 Cancelled previous reminder for task:', task.id);
     }
 
-    // Schedule the notification
+    // Calculate seconds from now until reminder time
+    const secondsUntilReminder = Math.floor((reminderDate.getTime() - now.getTime()) / 1000);
+
+    console.log('⏱️  Seconds until reminder:', secondsUntilReminder);
+
+    // Schedule the notification using TIME_INTERVAL trigger type (required in SDK 52+)
     const notificationId = await Notifications.scheduleNotificationAsync({
       content: {
         title: '⏰ Task Reminder',
@@ -99,7 +110,8 @@ export const scheduleTaskReminder = async (task: Task): Promise<string | null> =
         data: { taskId: task.id },
       },
       trigger: {
-        date: reminderDate,
+        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+        seconds: secondsUntilReminder,
       },
       identifier: `task-reminder-${task.id}`,
     });
