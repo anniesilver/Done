@@ -15,6 +15,8 @@ interface TaskListProps {
   getCategoryName?: (categoryId: number | null) => string | undefined;
   emptyMessage?: string;
   refreshControl?: React.ReactElement<typeof RefreshControl>;
+  taskConflicts?: Map<number | string, Task[]>;
+  showTime?: boolean; // Show time instead of date (for calendar view)
 }
 
 export const TaskList: React.FC<TaskListProps> = ({
@@ -26,6 +28,8 @@ export const TaskList: React.FC<TaskListProps> = ({
   getCategoryName,
   emptyMessage = 'No tasks yet',
   refreshControl,
+  taskConflicts,
+  showTime = false,
 }) => {
   if (tasks.length === 0) {
     return (
@@ -51,6 +55,9 @@ export const TaskList: React.FC<TaskListProps> = ({
           onDelete={onDeleteTask}
           showCategory={showCategory}
           categoryName={getCategoryName ? getCategoryName(task.categoryId) : undefined}
+          hasConflict={taskConflicts?.has(task.id) || false}
+          conflictingTasks={taskConflicts?.get(task.id) || []}
+          showTime={showTime}
         />
       ))}
     </ScrollView>

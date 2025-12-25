@@ -42,18 +42,30 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   // Actions
   fetchTasks: async () => {
     const user = useAuthStore.getState().user;
-    if (!user) return;
-
-    set({ isLoading: true, error: null });
-
-    const { tasks, error } = await taskService.getTasks(user.id);
-
-    if (error) {
-      set({ isLoading: false, error });
+    if (!user) {
+      console.log('[TaskStore] No user found, skipping fetch');
       return;
     }
 
-    set({ tasks: tasks || [], isLoading: false });
+    console.log('[TaskStore] Fetching tasks for user:', user.id);
+    set({ isLoading: true, error: null });
+
+    try {
+      const { tasks, error } = await taskService.getTasks(user.id);
+
+      if (error) {
+        console.error('[TaskStore] Error fetching tasks:', error);
+        set({ isLoading: false, error });
+        return;
+      }
+
+      console.log('[TaskStore] Successfully fetched', tasks?.length || 0, 'tasks');
+      set({ tasks: tasks || [], isLoading: false });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error fetching tasks';
+      console.error('[TaskStore] Network error fetching tasks:', errorMessage);
+      set({ isLoading: false, error: errorMessage });
+    }
   },
 
   addTask: async (input: CreateTaskInput) => {

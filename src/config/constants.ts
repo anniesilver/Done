@@ -1,7 +1,7 @@
 // App Constants
 
 export const APP_NAME = 'Done';
-export const APP_VERSION = '1.0.0';
+export const APP_VERSION = '1.1.0';
 
 // Time intervals for tasks (in minutes)
 export const TIME_INTERVALS = [
@@ -38,6 +38,12 @@ export const DEFAULT_CATEGORIES = [
   { name: 'Learning', icon: '📚' },
   { name: 'Shopping', icon: '🛒' },
 ];
+
+// Special category for imported phone calendar events
+export const PHONE_CALENDAR_CATEGORY = {
+  name: 'Phone Calendar',
+  icon: '📱',
+};
 
 // Sync settings (for Phase 2)
 export const SYNC_RETRY_DELAY = 5000; // 5 seconds
