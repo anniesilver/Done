@@ -2,7 +2,7 @@ module.exports = {
   expo: {
     name: 'Done',
     slug: 'done',
-    version: '1.0.0',
+    version: '1.1.0',
     orientation: 'portrait',
     icon: './assets/images/icon.png',
     userInterfaceStyle: 'light',
@@ -15,7 +15,7 @@ module.exports = {
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.anniesilver.done',
-      buildNumber: '3',
+      buildNumber: '4',
       infoPlist: {
         UIBackgroundModes: ['remote-notification', 'fetch', 'processing'],
         ITSAppUsesNonExemptEncryption: false,
@@ -33,6 +33,7 @@ module.exports = {
       },
       permissions: ['NOTIFICATIONS', 'VIBRATE'],
       package: 'com.done.app',
+      versionCode: 4,
     },
     web: {
       bundler: 'metro',
