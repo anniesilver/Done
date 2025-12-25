@@ -4,10 +4,8 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
-  Platform,
   Linking,
 } from 'react-native';
-import Constants from 'expo-constants';
 import {
   Text,
   Button,
@@ -28,45 +26,28 @@ export function CalendarSyncScreen() {
     selectedCalendarIds,
     isSyncing,
     lastSyncTime,
-    lastBackgroundSyncTime,
     syncError,
     totalEventsImported,
-    syncInterval,
     checkPermissions,
     requestPermissions,
     loadAvailableCalendars,
     toggleCalendarSelection,
     selectAllCalendars,
     deselectAllCalendars,
-    setSyncInterval,
     syncCalendars,
     quickSync,
     clearSyncError,
-    loadLastBackgroundSyncTime,
   } = useCalendarSyncStore();
 
   const [isInitializing, setIsInitializing] = useState(true);
-
-  // Check if running in Expo Go (background fetch not supported)
-  const isExpoGo = Constants.appOwnership === 'expo';
 
   useEffect(() => {
     initializeScreen();
   }, []);
 
-  // Periodically refresh last background sync time
-  useEffect(() => {
-    const interval = setInterval(() => {
-      loadLastBackgroundSyncTime();
-    }, 30000); // Refresh every 30 seconds
-
-    return () => clearInterval(interval);
-  }, []);
-
   const initializeScreen = async () => {
     setIsInitializing(true);
     await checkPermissions();
-    await loadLastBackgroundSyncTime();
 
     // Load calendars if permissions granted
     const status = useCalendarSyncStore.getState().permissionStatus;
@@ -142,22 +123,6 @@ export function CalendarSyncScreen() {
     return `${days} day(s) ago`;
   };
 
-  const formatLastBackgroundSyncTime = () => {
-    if (!lastBackgroundSyncTime) return 'Never';
-
-    const now = new Date();
-    const diff = now.getTime() - lastBackgroundSyncTime.getTime();
-    const minutes = Math.floor(diff / 60000);
-
-    if (minutes < 1) return 'Just now';
-    if (minutes < 60) return `${minutes} minute(s) ago`;
-
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours} hour(s) ago`;
-
-    const days = Math.floor(hours / 24);
-    return `${days} day(s) ago`;
-  };
 
 
   if (isInitializing) {
@@ -232,18 +197,10 @@ export function CalendarSyncScreen() {
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
               <Text variant="bodySmall" style={styles.statLabel}>
-                Last Manual Sync
+                Last Sync
               </Text>
               <Text variant="bodyLarge" style={styles.statValue}>
                 {formatLastSyncTime()}
-              </Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text variant="bodySmall" style={styles.statLabel}>
-                Last Auto Sync
-              </Text>
-              <Text variant="bodyLarge" style={styles.statValue}>
-                {formatLastBackgroundSyncTime()}
               </Text>
             </View>
             <View style={styles.statItem}>
@@ -255,59 +212,6 @@ export function CalendarSyncScreen() {
               </Text>
             </View>
           </View>
-        </View>
-
-        <Divider />
-
-        {/* Sync Interval Section */}
-        <View style={styles.section}>
-          <Text variant="titleMedium" style={styles.sectionTitle}>
-            Sync Frequency
-          </Text>
-
-          {isExpoGo ? (
-            <Banner
-              visible={true}
-              icon="information"
-              style={styles.expoGoBanner}
-            >
-              Background sync is not available in Expo Go. Please use a development build or
-              TestFlight build to enable automatic syncing.
-            </Banner>
-          ) : (
-            <>
-              <View style={styles.intervalContainer}>
-                <Button
-                  mode={syncInterval === 'manual' ? 'contained' : 'outlined'}
-                  onPress={() => setSyncInterval('manual')}
-                  style={styles.intervalButton}
-                >
-                  Manual
-                </Button>
-                <Button
-                  mode={syncInterval === 'hourly' ? 'contained' : 'outlined'}
-                  onPress={() => setSyncInterval('hourly')}
-                  style={styles.intervalButton}
-                >
-                  Hourly
-                </Button>
-                <Button
-                  mode={syncInterval === 'daily' ? 'contained' : 'outlined'}
-                  onPress={() => setSyncInterval('daily')}
-                  style={styles.intervalButton}
-                >
-                  Daily
-                </Button>
-              </View>
-              <Text variant="bodySmall" style={styles.helperText}>
-                {syncInterval === 'manual'
-                  ? 'Calendar events will only sync when you tap the sync button'
-                  : `Calendar events will automatically sync ${
-                      syncInterval === 'hourly' ? 'every hour' : 'once per day'
-                    } in the background`}
-              </Text>
-            </>
-          )}
         </View>
 
         <Divider />
@@ -499,14 +403,6 @@ const styles = StyleSheet.create({
   },
   syncButton: {
     marginBottom: 8,
-  },
-  intervalContainer: {
-    flexDirection: 'row',
-    gap: 8,
-    marginVertical: 12,
-  },
-  intervalButton: {
-    flex: 1,
   },
   helperText: {
     textAlign: 'center',

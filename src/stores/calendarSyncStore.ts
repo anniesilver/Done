@@ -3,11 +3,15 @@
 import { create } from 'zustand';
 import { calendarImportService, CalendarInfo, CalendarSyncResult } from '../services/calendarImportService';
 import { calendarPermissionService, CalendarPermissionStatus } from '../services/calendarPermissionService';
-import { backgroundSyncService, SyncInterval } from '../services/backgroundSyncService';
+// Background sync disabled - using manual sync only
+// import { backgroundSyncService, SyncInterval } from '../services/backgroundSyncService';
 import { useAuthStore } from './authStore';
 import { useTaskStore } from './taskStore';
 import { useCategoryStore } from './categoryStore';
 import { PHONE_CALENDAR_CATEGORY } from '../config/constants';
+
+// Type for sync interval (kept for store state compatibility)
+export type SyncInterval = 'manual' | 'hourly' | 'daily';
 
 export interface CalendarSyncState {
   // Permission state
@@ -448,121 +452,42 @@ export const useCalendarSyncStore = create<CalendarSyncStore>((set, get) => ({
     set({ importedEventIds: newSet });
   },
 
-  // Background sync actions
+  // Background sync actions - DISABLED (using manual sync only)
+  // These methods are kept as stubs to avoid breaking any potential callers
   setSyncInterval: async (interval: SyncInterval) => {
-    try {
-      const { selectedCalendarIds } = get();
-      const user = useAuthStore.getState().user;
-
-      if (!user) {
-        const errorMsg = 'User not authenticated. Please log in to enable background sync.';
-        console.error(errorMsg);
-        set({ syncError: errorMsg });
-        return false;
-      }
-
-      if (interval !== 'manual' && selectedCalendarIds.length === 0) {
-        const errorMsg = 'No calendars selected. Please select calendars before enabling background sync.';
-        console.error(errorMsg);
-        set({ syncError: errorMsg });
-        return false;
-      }
-
-      const success = await backgroundSyncService.registerBackgroundSync(
-        interval,
-        user.id,
-        selectedCalendarIds
-      );
-
-      if (success) {
-        set({
-          syncInterval: interval,
-          isBackgroundSyncEnabled: interval !== 'manual',
-        });
-      } else {
-        set({ syncError: 'Failed to register background sync. Please try again.' });
-      }
-
-      return success;
-    } catch (error) {
-      const errorMsg = `Error setting sync interval: ${error instanceof Error ? error.message : 'Unknown error'}`;
-      console.error(errorMsg);
-      set({ syncError: errorMsg });
-      return false;
-    }
+    console.log('[CalendarSync] Background sync disabled - using manual sync only');
+    set({
+      syncInterval: 'manual',
+      isBackgroundSyncEnabled: false,
+    });
+    return false;
   },
 
   enableBackgroundSync: async (interval: SyncInterval) => {
-    try {
-      const { selectedCalendarIds } = get();
-      const user = useAuthStore.getState().user;
-
-      if (!user) {
-        set({ syncError: 'User not authenticated' });
-        return false;
-      }
-
-      if (selectedCalendarIds.length === 0) {
-        set({ syncError: 'No calendars selected' });
-        return false;
-      }
-
-      const success = await backgroundSyncService.registerBackgroundSync(
-        interval,
-        user.id,
-        selectedCalendarIds
-      );
-
-      if (success) {
-        set({
-          syncInterval: interval,
-          isBackgroundSyncEnabled: true,
-        });
-      }
-
-      return success;
-    } catch (error) {
-      console.error('Error enabling background sync:', error);
-      set({ syncError: 'Failed to enable background sync' });
-      return false;
-    }
+    console.log('[CalendarSync] Background sync disabled - using manual sync only');
+    set({
+      syncInterval: 'manual',
+      isBackgroundSyncEnabled: false,
+    });
+    return false;
   },
 
   disableBackgroundSync: async () => {
-    try {
-      const success = await backgroundSyncService.unregisterBackgroundSync();
-
-      if (success) {
-        set({
-          syncInterval: 'manual',
-          isBackgroundSyncEnabled: false,
-        });
-      }
-
-      return success;
-    } catch (error) {
-      console.error('Error disabling background sync:', error);
-      return false;
-    }
+    console.log('[CalendarSync] Background sync disabled - using manual sync only');
+    set({
+      syncInterval: 'manual',
+      isBackgroundSyncEnabled: false,
+    });
+    return true;
   },
 
   checkBackgroundSyncStatus: async () => {
-    try {
-      const isRegistered = await backgroundSyncService.isTaskRegistered();
-      set({ isBackgroundSyncEnabled: isRegistered });
-    } catch (error) {
-      console.error('Error checking background sync status:', error);
-      set({ isBackgroundSyncEnabled: false });
-    }
+    console.log('[CalendarSync] Background sync disabled - using manual sync only');
+    set({ isBackgroundSyncEnabled: false });
   },
 
   loadLastBackgroundSyncTime: async () => {
-    try {
-      const lastSyncTime = await backgroundSyncService.getLastBackgroundSyncTime();
-      set({ lastBackgroundSyncTime: lastSyncTime });
-    } catch (error) {
-      console.error('Error loading last background sync time:', error);
-      set({ lastBackgroundSyncTime: null });
-    }
+    console.log('[CalendarSync] Background sync disabled - using manual sync only');
+    set({ lastBackgroundSyncTime: null });
   },
 }));

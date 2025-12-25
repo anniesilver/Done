@@ -15,7 +15,7 @@ module.exports = {
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.anniesilver.done',
-      buildNumber: '5',
+      buildNumber: '6',
       infoPlist: {
         UIBackgroundModes: ['remote-notification'],
         ITSAppUsesNonExemptEncryption: false,
@@ -33,7 +33,7 @@ module.exports = {
       },
       permissions: ['NOTIFICATIONS', 'VIBRATE'],
       package: 'com.done.app',
-      versionCode: 5,
+      versionCode: 6,
     },
     web: {
       bundler: 'metro',
