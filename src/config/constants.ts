@@ -39,6 +39,12 @@ export const DEFAULT_CATEGORIES = [
   { name: 'Shopping', icon: '🛒' },
 ];
 
+// Special category for imported phone calendar events
+export const PHONE_CALENDAR_CATEGORY = {
+  name: 'Phone Calendar',
+  icon: '📱',
+};
+
 // Sync settings (for Phase 2)
 export const SYNC_RETRY_DELAY = 5000; // 5 seconds
 export const SYNC_MAX_RETRIES = 3;

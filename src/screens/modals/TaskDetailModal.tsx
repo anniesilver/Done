@@ -11,12 +11,14 @@ interface TaskDetailModalProps {
   visible: boolean;
   task: Task | null; // null means create mode
   onClose: () => void;
+  initialDate?: Date; // Initial date for new tasks (when task is null)
 }
 
 export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   visible,
   task,
   onClose,
+  initialDate,
 }) => {
   const [submitForm, setSubmitForm] = useState<(() => void) | null>(null);
 
@@ -78,6 +80,8 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                   categoryId: task.categoryId,
                   duration: task.duration,
                 }
+              : initialDate
+              ? { dueDate: initialDate }
               : undefined
           }
           taskId={task?.id}

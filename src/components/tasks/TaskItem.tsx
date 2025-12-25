@@ -16,6 +16,9 @@ interface TaskItemProps {
   onDelete?: (id: number | string) => void;
   showCategory?: boolean;
   categoryName?: string;
+  hasConflict?: boolean;
+  conflictingTasks?: Task[];
+  showTime?: boolean; // Show time instead of date (for calendar view)
 }
 
 export const TaskItem: React.FC<TaskItemProps> = ({
@@ -25,6 +28,9 @@ export const TaskItem: React.FC<TaskItemProps> = ({
   onDelete,
   showCategory = false,
   categoryName,
+  hasConflict = false,
+  conflictingTasks = [],
+  showTime = false,
 }) => {
   const swipeableRef = React.useRef<Swipeable>(null);
 
@@ -155,40 +161,82 @@ export const TaskItem: React.FC<TaskItemProps> = ({
 
         {/* Task content */}
         <View style={styles.content}>
-          <Text
-            style={[
-              styles.taskText,
-              task.completed && styles.taskTextCompleted,
-            ]}
-          >
-            {task.text}
-          </Text>
-
-          {/* Metadata row */}
-          <View style={styles.metadata}>
-            {showCategory && categoryName && (
-              <View style={styles.categoryContainer}>
-                <View style={[styles.categoryDot, { backgroundColor: getCategoryColor() }]} />
-                <Text style={styles.categoryText}>{categoryName}</Text>
-              </View>
-            )}
-
-            {task.dueDate && (
-              <Text style={styles.dueDateText}>
-                {format(new Date(task.dueDate), 'MMM d, yyyy')}
-              </Text>
-            )}
-
-            {task.duration > 0 && (
-              <Text style={styles.durationText}>{task.duration} min</Text>
-            )}
-
-            {task.recurrence !== 'none' && (
-              <Text style={styles.recurrenceText}>
-                ↻ {task.recurrence}
-              </Text>
+          <View style={styles.taskTextRow}>
+            <Text
+              style={[
+                styles.taskText,
+                task.completed && styles.taskTextCompleted,
+              ]}
+            >
+              {task.text}
+            </Text>
+            {hasConflict && (
+              <Icon name="alert-circle" size={18} color={colors.semantic.warning} style={styles.conflictIcon} />
             )}
           </View>
+
+          {/* Metadata rows - different layout for calendar view */}
+          {showTime ? (
+            // Calendar view: Two-line layout for better time conflict visibility
+            <>
+              {/* Line 1: Time and Duration (critical for scheduling) */}
+              <View style={styles.metadata}>
+                {task.dueDate && (
+                  <Text style={styles.dueDateText}>
+                    {format(new Date(task.dueDate), 'h:mm a')}
+                  </Text>
+                )}
+
+                {task.duration > 0 && (
+                  <Text style={styles.durationText}>{task.duration} min</Text>
+                )}
+              </View>
+
+              {/* Line 2: Category and Recurrence (organizational info) */}
+              {(showCategory && categoryName) || task.recurrence !== 'none' ? (
+                <View style={styles.metadata}>
+                  {showCategory && categoryName && (
+                    <View style={styles.categoryContainer}>
+                      <View style={[styles.categoryDot, { backgroundColor: getCategoryColor() }]} />
+                      <Text style={styles.categoryText}>{categoryName}</Text>
+                    </View>
+                  )}
+
+                  {task.recurrence !== 'none' && (
+                    <Text style={styles.recurrenceText}>
+                      ↻ {task.recurrence}
+                    </Text>
+                  )}
+                </View>
+              ) : null}
+            </>
+          ) : (
+            // Default view: Single-line layout
+            <View style={styles.metadata}>
+              {showCategory && categoryName && (
+                <View style={styles.categoryContainer}>
+                  <View style={[styles.categoryDot, { backgroundColor: getCategoryColor() }]} />
+                  <Text style={styles.categoryText}>{categoryName}</Text>
+                </View>
+              )}
+
+              {task.dueDate && (
+                <Text style={styles.dueDateText}>
+                  {format(new Date(task.dueDate), 'MMM d, yyyy')}
+                </Text>
+              )}
+
+              {task.duration > 0 && (
+                <Text style={styles.durationText}>{task.duration} min</Text>
+              )}
+
+              {task.recurrence !== 'none' && (
+                <Text style={styles.recurrenceText}>
+                  ↻ {task.recurrence}
+                </Text>
+              )}
+            </View>
+          )}
         </View>
       </TouchableOpacity>
     </Swipeable>
@@ -227,10 +275,19 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
+  taskTextRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.xs,
+  },
   taskText: {
     fontSize: typography.body.fontSize,
     color: colors.text.primary,
-    marginBottom: spacing.xs,
+    flex: 1,
+  },
+  conflictIcon: {
+    marginLeft: spacing.xs,
   },
   taskTextCompleted: {
     textDecorationLine: 'line-through',

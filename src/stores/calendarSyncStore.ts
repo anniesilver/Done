@@ -6,6 +6,8 @@ import { calendarPermissionService, CalendarPermissionStatus } from '../services
 import { backgroundSyncService, SyncInterval } from '../services/backgroundSyncService';
 import { useAuthStore } from './authStore';
 import { useTaskStore } from './taskStore';
+import { useCategoryStore } from './categoryStore';
+import { PHONE_CALENDAR_CATEGORY } from '../config/constants';
 
 export interface CalendarSyncState {
   // Permission state
@@ -153,6 +155,57 @@ export const useCalendarSyncStore = create<CalendarSyncStore>((set, get) => ({
     set({ selectedCalendarIds: [] });
   },
 
+  // Helper to get or create the phone calendar category
+  getOrCreatePhoneCalendarCategory: async (): Promise<number | null> => {
+    const categoryStore = useCategoryStore.getState();
+    const user = useAuthStore.getState().user;
+
+    console.log('[CalendarSync] Getting or creating phone calendar category...');
+
+    if (!user) {
+      console.error('[CalendarSync] User not authenticated');
+      return null;
+    }
+
+    // Ensure categories are loaded
+    if (categoryStore.categories.length === 0) {
+      console.log('[CalendarSync] Categories not loaded, fetching...');
+      await categoryStore.fetchCategories();
+    }
+
+    // Check if phone calendar category already exists
+    const existingCategory = categoryStore.categories.find(
+      (cat) => cat.name === PHONE_CALENDAR_CATEGORY.name
+    );
+
+    if (existingCategory) {
+      console.log('[CalendarSync] Phone calendar category already exists with ID:', existingCategory.id);
+      return existingCategory.id;
+    }
+
+    // Create the phone calendar category
+    console.log('[CalendarSync] Creating phone calendar category...');
+    try {
+      const { categoryService } = await import('../services/supabaseService');
+      const { category, error } = await categoryService.createCategory(user.id, PHONE_CALENDAR_CATEGORY);
+
+      if (error || !category) {
+        console.error('[CalendarSync] Failed to create category:', error);
+        return null;
+      }
+
+      console.log('[CalendarSync] Phone calendar category created with ID:', category.id);
+
+      // Update the category store with the new category
+      categoryStore.setCategories([...categoryStore.categories, category]);
+
+      return category.id;
+    } catch (error) {
+      console.error('[CalendarSync] Error creating phone calendar category:', error);
+      return null;
+    }
+  },
+
   // Sync actions
   syncCalendars: async (daysAhead: number = 30) => {
     const { selectedCalendarIds, importedEventIds } = get();
@@ -183,6 +236,20 @@ export const useCalendarSyncStore = create<CalendarSyncStore>((set, get) => ({
     set({ isSyncing: true, syncError: null });
 
     try {
+      // Get or create the phone calendar category
+      const phoneCalendarCategoryId = await get().getOrCreatePhoneCalendarCategory();
+
+      if (!phoneCalendarCategoryId) {
+        const error = 'Failed to create phone calendar category';
+        set({ isSyncing: false, syncError: error });
+        return {
+          success: false,
+          eventsImported: 0,
+          tasksCreated: [],
+          errors: [error],
+        };
+      }
+
       // Load already-imported event IDs from database
       const { taskService } = await import('../services/supabaseService');
       const { eventIds: dbEventIds } = await taskService.getImportedEventIds(user.id, 'iphone_calendar');
@@ -197,6 +264,11 @@ export const useCalendarSyncStore = create<CalendarSyncStore>((set, get) => ({
         daysAhead,
         allImportedEventIds
       );
+
+      // Assign phone calendar category to all imported tasks
+      result.tasksCreated.forEach((task) => {
+        task.categoryId = phoneCalendarCategoryId;
+      });
 
       if (!result.success) {
         set({
@@ -267,6 +339,20 @@ export const useCalendarSyncStore = create<CalendarSyncStore>((set, get) => ({
     set({ isSyncing: true, syncError: null });
 
     try {
+      // Get or create the phone calendar category
+      const phoneCalendarCategoryId = await get().getOrCreatePhoneCalendarCategory();
+
+      if (!phoneCalendarCategoryId) {
+        const error = 'Failed to create phone calendar category';
+        set({ isSyncing: false, syncError: error });
+        return {
+          success: false,
+          eventsImported: 0,
+          tasksCreated: [],
+          errors: [error],
+        };
+      }
+
       // Load already-imported event IDs from database
       const { taskService } = await import('../services/supabaseService');
       const { eventIds: dbEventIds } = await taskService.getImportedEventIds(user.id, 'iphone_calendar');
@@ -276,6 +362,11 @@ export const useCalendarSyncStore = create<CalendarSyncStore>((set, get) => ({
 
       // Quick sync from default calendars
       const result = await calendarImportService.quickSync(user.id, allImportedEventIds);
+
+      // Assign phone calendar category to all imported tasks
+      result.tasksCreated.forEach((task) => {
+        task.categoryId = phoneCalendarCategoryId;
+      });
 
       if (!result.success) {
         set({

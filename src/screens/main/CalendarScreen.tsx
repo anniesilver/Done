@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Text } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import * as Haptics from 'expo-haptics';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -17,6 +18,7 @@ import { colors, spacing, typography } from '../../config/theme';
 import { format, addMonths, subMonths, addWeeks, subWeeks, isSameDay } from 'date-fns';
 import { Task } from '../../types/task';
 import { RootStackParamList } from '../../navigation/RootNavigator';
+import { getOverlappingTasks, TimeSlot } from '../../utils/timeSlotValidation';
 
 type NavigationProp = StackNavigationProp<RootStackParamList, 'MainTabs'>;
 
@@ -42,8 +44,20 @@ export const CalendarScreen: React.FC = () => {
 
   // Initial data fetch
   useEffect(() => {
-    fetchTasks();
-    fetchCategories();
+    const loadData = async () => {
+      try {
+        await Promise.all([
+          fetchTasks(),
+          fetchCategories()
+        ]);
+      } catch (error) {
+        console.error('[CalendarScreen] Error loading initial data:', error);
+        // Don't crash the app, just log the error
+        // The stores will handle their own error states
+      }
+    };
+
+    loadData();
   }, []);
 
   // Toggle between monthly and weekly view
@@ -76,6 +90,36 @@ export const CalendarScreen: React.FC = () => {
     return categories.find((c) => c.id === categoryId)?.name;
   };
 
+  // Detect conflicts among tasks for the selected date
+  const getTaskConflicts = (tasks: Task[]): Map<number | string, Task[]> => {
+    const conflictMap = new Map<number | string, Task[]>();
+
+    tasks.forEach((task) => {
+      // Skip tasks without duration or due date
+      if (!task.dueDate || !task.duration || task.duration === 0) {
+        return;
+      }
+
+      const taskStart = new Date(task.dueDate);
+      const taskEnd = new Date(taskStart.getTime() + task.duration * 60000);
+
+      const taskSlot: TimeSlot = {
+        start: taskStart,
+        end: taskEnd,
+      };
+
+      // Find other tasks that overlap with this one
+      const otherTasks = tasks.filter((t) => t.id !== task.id);
+      const conflicts = getOverlappingTasks(taskSlot, otherTasks);
+
+      if (conflicts.length > 0) {
+        conflictMap.set(task.id, conflicts);
+      }
+    });
+
+    return conflictMap;
+  };
+
   const handleCreateTask = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setSelectedTask(null);
@@ -93,6 +137,8 @@ export const CalendarScreen: React.FC = () => {
   };
 
   const selectedDateTasks = selectedDate ? getTasksForDate(selectedDate) : [];
+  const taskConflicts = getTaskConflicts(selectedDateTasks);
+  const hasConflicts = taskConflicts.size > 0;
 
   return (
     <View style={styles.container}>
@@ -131,6 +177,17 @@ export const CalendarScreen: React.FC = () => {
             <Text style={styles.tasksSectionTitle}>
               Tasks for {selectedDate.toLocaleDateString()}
             </Text>
+
+            {/* Conflict Warning Banner */}
+            {hasConflicts && (
+              <View style={styles.conflictBanner}>
+                <Icon name="alert-circle" size={20} color={colors.semantic.warning} />
+                <Text style={styles.conflictBannerText}>
+                  {taskConflicts.size} {taskConflicts.size === 1 ? 'task has' : 'tasks have'} scheduling conflicts
+                </Text>
+              </View>
+            )}
+
             <TaskList
               tasks={selectedDateTasks}
               onToggleComplete={toggleComplete}
@@ -139,6 +196,8 @@ export const CalendarScreen: React.FC = () => {
               showCategory={true}
               getCategoryName={getCategoryName}
               emptyMessage="No tasks for this date"
+              taskConflicts={taskConflicts}
+              showTime={true}
             />
           </View>
         )}
@@ -154,6 +213,7 @@ export const CalendarScreen: React.FC = () => {
         visible={modalVisible}
         task={selectedTask}
         onClose={handleCloseModal}
+        initialDate={selectedDate || undefined}
       />
     </View>
   );
@@ -195,5 +255,21 @@ const styles = StyleSheet.create({
     lineHeight: 32,
     color: colors.surface.white,
     fontWeight: '300',
+  },
+  conflictBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF3CD',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.md,
+    borderRadius: 8,
+    gap: spacing.sm,
+  },
+  conflictBannerText: {
+    fontSize: typography.body.fontSize,
+    color: '#856404',
+    fontWeight: '500',
+    flex: 1,
   },
 });

@@ -3,6 +3,7 @@ import * as TaskManager from 'expo-task-manager';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { calendarImportService } from './calendarImportService';
+import { PHONE_CALENDAR_CATEGORY } from '../config/constants';
 
 // Background task name
 export const CALENDAR_SYNC_TASK = 'CALENDAR_SYNC_BACKGROUND_TASK';
@@ -60,9 +61,27 @@ TaskManager.defineTask(CALENDAR_SYNC_TASK, async () => {
     console.log(`[BackgroundSync] Syncing ${calendarIds.length} calendars for user ${userId}`);
 
     // Load already-imported event IDs from database
-    const { taskService } = await import('./supabaseService');
+    const { taskService, categoryService } = await import('./supabaseService');
     const { eventIds: dbEventIds } = await taskService.getImportedEventIds(userId, 'iphone_calendar');
     const existingEventIds = new Set(dbEventIds);
+
+    // Get or create phone calendar category
+    let phoneCalendarCategoryId: number | null = null;
+    const { categories } = await categoryService.getCategories(userId);
+    const existingCategory = categories?.find((cat) => cat.name === PHONE_CALENDAR_CATEGORY.name);
+
+    if (existingCategory) {
+      phoneCalendarCategoryId = existingCategory.id;
+    } else {
+      // Create the phone calendar category
+      const { category } = await categoryService.createCategory(userId, PHONE_CALENDAR_CATEGORY);
+      phoneCalendarCategoryId = category?.id || null;
+    }
+
+    if (!phoneCalendarCategoryId) {
+      console.error('[BackgroundSync] Failed to get or create phone calendar category');
+      return BackgroundFetch.BackgroundFetchResult.Failed;
+    }
 
     // Import events as tasks
     const result = await calendarImportService.importEventsAsTasks(
@@ -71,6 +90,11 @@ TaskManager.defineTask(CALENDAR_SYNC_TASK, async () => {
       30, // 30 days ahead
       existingEventIds
     );
+
+    // Assign phone calendar category to all imported tasks
+    result.tasksCreated.forEach((task) => {
+      task.categoryId = phoneCalendarCategoryId;
+    });
 
     if (!result.success) {
       console.error('[BackgroundSync] Sync failed:', result.errors);
