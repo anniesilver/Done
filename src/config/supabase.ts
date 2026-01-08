@@ -10,23 +10,12 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   throw new Error('Missing Supabase credentials. Please check your .env file.');
 }
 
-// Create custom storage adapter for Supabase auth
+// Create Supabase client with AsyncStorage for session persistence
 // This ensures sessions persist across app restarts and backgrounding
-const supabaseStorage = {
-  getItem: (key: string) => {
-    return AsyncStorage.getItem(key);
-  },
-  setItem: (key: string, value: string) => {
-    return AsyncStorage.setItem(key, value);
-  },
-  removeItem: (key: string) => {
-    return AsyncStorage.removeItem(key);
-  },
-};
-
+// Using AsyncStorage directly as per Supabase official docs
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
-    storage: supabaseStorage,
+    storage: AsyncStorage,
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
